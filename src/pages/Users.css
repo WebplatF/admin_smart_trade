@@ -1,113 +1,147 @@
 /* ================= PAGE HEADER ================= */
 
 .users-page h1 {
-    margin-bottom: 5px;
-    font-size: 26px;
-  }
-  
-  .subtitle {
-    color: #777;
-    margin-bottom: 20px;
-    font-size: 14px;
-  }
-  
-  /* ================= SEARCH ================= */
-  
-  .search-input {
-    padding: 10px 14px;
-    width: 260px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    margin-bottom: 20px;
-    transition: 0.2s ease;
-  }
-  
-  .search-input:focus {
-    outline: none;
-    border-color: #14389C;
-    box-shadow: 0 0 0 2px rgba(20, 56, 156, 0.1);
-  }
-  
-  /* ================= TABLE ================= */
-  
-  .users-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  }
-  
-  .users-table th {
-    background: #14389C;
-    color: white;
-    padding: 14px;
-    text-align: left;
-    font-weight: 500;
-    font-size: 14px;
-  }
-  
-  .users-table td {
-    padding: 14px;
-    border-bottom: 1px solid #f1f1f1;
-    font-size: 14px;
-  }
-  
-  /* Row hover effect */
-  .users-table tbody tr:hover {
-    background: #f8f9fc;
-  }
-  
-  /* ================= DELETE BUTTON ================= */
-  
-  .delete-btn {
-    background: #e53935;
-    border: none;
-    color: white;
-    padding: 6px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: 0.2s ease;
-  }
-  
-  .delete-btn:hover {
-    background: #c62828;
-  }
-  
-  /* ================= PAGINATION ================= */
-  
-  .pagination-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 25px;
-  }
-  
-  .page-btn,
-  .arrow-btn {
-    min-width: 36px;
-    height: 36px;
-    border: 1px solid #e0e0e0;
-    background: white;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: 0.2s ease;
-    font-size: 14px;
-  }
-  
-  .page-btn:hover,
-  .arrow-btn:hover {
-    background: #f2f4f8;
-  }
-  
-  .page-btn.active {
-    background: #14389C;
-    color: white;
-    border: none;
-  }
-  
-  .arrow-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+  margin-bottom: 5px;
+  font-size: 26px;
+}
+
+.subtitle {
+  color: #777;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* ================= SEARCH ================= */
+
+.search-input {
+  padding: 10px 14px;
+  width: 260px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  transition: 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #14389C;
+  box-shadow: 0 0 0 2px rgba(20, 56, 156, 0.1);
+}
+
+/* ================= TABLE ================= */
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.users-table th {
+  background: #14389C;
+  color: white;
+  padding: 14px;
+  text-align: left;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.users-table td {
+  padding: 14px;
+  border-bottom: 1px solid #f1f1f1;
+  font-size: 14px;
+}
+
+.users-table tbody tr:hover {
+  background: #f8f9fc;
+}
+
+/* ================= TOGGLE SWITCH ================= */
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* disabled (red) */
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #e53935;
+  border-radius: 34px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: 0.3s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+/* enabled (green) */
+
+input:checked + .slider {
+  background-color: #2ecc71;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* ================= PAGINATION ================= */
+
+.pagination-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 25px;
+}
+
+.page-btn,
+.arrow-btn {
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-size: 14px;
+}
+
+.page-btn:hover,
+.arrow-btn:hover {
+  background: #f2f4f8;
+}
+
+.page-btn.active {
+  background: #14389C;
+  color: white;
+  border: none;
+}
+
+.arrow-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -1,43 +1,43 @@
 .sidebar {
-    width: 240px;
-    background: #14389C;
-    color: white;
-    min-height: 100vh;   
-    padding: 20px;
-  }
-  .logo {
-    margin-bottom: 30px;
-  }
-  
-  .menu-item {
-    display: block;
-    padding: 12px;
-    margin-bottom: 10px;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-  }
-  
-  .menu-item.active {
-    background: #ff8c00;
-  }
-  
-  .menu-item:hover {
-    background: rgba(255,255,255,0.2);
-  }
-  .menu-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    margin-bottom: 10px;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    gap: 10px;
-  }
-  
-  .menu-icon {
-    width: 18px;
-    height: 18px;
-    object-fit: contain;
-  }
+  width: 240px;
+  background: #14389C;
+  color: white;
+  min-height: 100vh;
+}
+
+.logo {
+  margin-bottom: 30px;
+  padding: 20px;
+}
+
+/* menu items */
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;   /* horizontal padding moved here */
+  margin-bottom: 10px;
+  color: white;
+  text-decoration: none;
+  gap: 10px;
+  width: 100%;          /* important for full width */
+  box-sizing: border-box;
+}
+
+/* active menu */
+
+.menu-item.active {
+  background: #ff8c00;
+}
+
+/* hover */
+
+.menu-item:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.menu-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}

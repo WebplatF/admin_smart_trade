@@ -16,7 +16,7 @@ const Sidebar = () => {
           Users
         </NavLink>
   
-        <NavLink to="/admin/plans" className="menu-item">
+        <NavLink to="/admin/subscription-plans" className="menu-item">
           <img src={plansIcon} alt="Plans" className="menu-icon" />
           Subscription Plans
         </NavLink>

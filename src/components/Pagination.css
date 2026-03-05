@@ -1,33 +1,78 @@
+/* ================= PAGINATION CONTAINER ================= */
+
 .pagination-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 25px;
-  }
-  
-  .page-btn,
-  .arrow-btn {
-    min-width: 36px;
-    height: 36px;
-    border: 1px solid #e0e0e0;
-    background: white;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: 0.2s ease;
-  }
-  
-  .page-btn:hover,
-  .arrow-btn:hover {
-    background: #f2f4f8;
-  }
-  
-  .page-btn.active {
-    background: #14389C;
-    color: white;
-    border: none;
-  }
-  
-  .arrow-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+/* ================= PAGE BUTTON ================= */
+
+.page-btn {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e5e5e5;
+  background: #ffffff;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+/* Hover effect */
+
+.page-btn:hover {
+  background: #f7f7f7;
+}
+
+/* Active page */
+
+.page-btn.active {
+  background: #f5a623;   /* orange active color */
+  color: #ffffff;
+  border: none;
+}
+
+/* ================= ARROW BUTTON ================= */
+
+.arrow-btn {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e5e5e5;
+  background: #ffffff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #777;
+  transition: all 0.2s ease;
+}
+
+/* Hover */
+
+.arrow-btn:hover {
+  background: #f7f7f7;
+}
+
+/* Disabled state */
+
+.arrow-btn:disabled {
+  background: #f2f2f2;
+  border: none;
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+/* Arrow icon size */
+
+.arrow-btn svg {
+  width: 18px;
+  height: 18px;
+}

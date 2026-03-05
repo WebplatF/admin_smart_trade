@@ -5,6 +5,16 @@ import "./Users.css";
 const Users = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [userStatus, setUserStatus] = useState(
+    Array(8).fill(true) // true = active
+  );
+
+  const toggleStatus = (index) => {
+    const updatedStatus = [...userStatus];
+    updatedStatus[index] = !updatedStatus[index];
+    setUserStatus(updatedStatus);
+  };
+
   return (
     <div className="users-page">
       <h1>Users</h1>
@@ -19,12 +29,12 @@ const Users = () => {
       <table className="users-table">
         <thead>
           <tr>
-            <th>#</th>
+            <th>S.No</th>
             <th>Full Name</th>
             <th>Phone Number</th>
             <th>Email</th>
-            <th>ID</th>
-            <th></th>
+            <th>IP</th>
+            <th>Status</th>
           </tr>
         </thead>
 
@@ -37,14 +47,21 @@ const Users = () => {
               <td>user@email.com</td>
               <td>#0012345</td>
               <td>
-                <button className="delete-btn">🗑</button>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={userStatus[index]}
+                    onChange={() => toggleStatus(index)}
+                  />
+                  <span className="slider"></span>
+                </label>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-c      <Pagination
+      <Pagination
         currentPage={currentPage}
         totalPages={5}
         onPageChange={setCurrentPage}
