@@ -1,0 +1,11 @@
+.admin-layout {
+  display: flex;
+}
+
+/* CONTENT AREA */
+.admin-content {
+  margin-left: 240px;   /* 🔥 THIS FIXES OVERLAP */
+  width: calc(100% - 240px);
+  min-height: 100vh;
+  background: #f5f7fb;
+}

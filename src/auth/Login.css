@@ -1,0 +1,176 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+  }
+  
+  .login-container {
+    display: flex;
+    height: 100vh;
+    background: #ffffff;
+  }
+  
+  /* ================= LEFT SECTION ================= */
+  
+  .login-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .login-content {
+    width: 380px;
+  }
+  
+  .logo-text {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  
+  .login-heading {
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 35px;
+    color: #111;
+  }
+  
+  /* ================= FORM ================= */
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+    margin-bottom: 6px;
+    display: block;
+    color: #333;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 12px 40px 12px 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+    transition: all 0.2s ease;
+  }
+  
+  .input-field:focus {
+    outline: none;
+    border-color: #14389C;
+    box-shadow: 0 0 0 2px rgba(20, 56, 156, 0.15);
+  }
+  
+  /* ================= PASSWORD ================= */
+  
+  .password-wrapper {
+    position: relative;
+  }
+  
+  .toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: #777;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .toggle-btn:hover {
+    color: #14389C;
+  }
+  
+  /* ================= FORGOT PASSWORD ================= */
+  
+  .forgot-text {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 25px;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+  
+  .forgot-text:hover {
+    color: #14389C;
+  }
+  
+  /* ================= BUTTON ================= */
+  
+  .signin-btn {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #14389C, #0f2e7a);
+    color: white;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s ease;
+  }
+  
+  .signin-btn:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+  
+  /* ================= RIGHT SECTION ================= */
+  
+  .login-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Curved Blue Panel */
+  .right-panel {
+    width: 100%;
+    height: 100%;
+    background: #EBF5FF;
+    border-radius: 30px 0 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  
+  .right-panel img {
+    width: 75%;
+    max-width: 520px;
+  }
+  /* ================= ERROR STATE ================= */
+
+.input-error {
+    border: 1px solid #e53935 !important;
+    background: #fff5f5;
+  }
+  
+  .error-message {
+    font-size: 13px;
+    color: #e53935;
+    margin-top: -10px;
+    margin-bottom: 20px;
+  }
+  
+  /* ================= RESPONSIVE ================= */
+  
+  @media (max-width: 900px) {
+    .login-container {
+      flex-direction: column;
+    }
+  
+    .login-right {
+      display: none;
+    }
+  }

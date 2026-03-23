@@ -1,0 +1,197 @@
+/* ================= PAGE HEADER ================= */
+
+.users-page {
+  padding: 30px;
+}
+
+.users-page h1 {
+  margin-bottom: 5px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e1e2d;
+}
+
+.subtitle {
+  color: #777;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+/* ================= SEARCH ================= */
+
+.search-input {
+  padding: 10px 14px;
+  width: 260px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  transition: 0.2s ease;
+  font-size: 13px;
+  background: #fff;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #14389C;
+  box-shadow: 0 0 0 2px rgba(20, 56, 156, 0.1);
+}
+
+/* ================= TABLE ================= */
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden; /* 🔥 FIX (instead of visible) */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.users-table th {
+  background: #14389C;
+  color: white;
+  padding: 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  position: relative;
+}
+
+.users-table td {
+  padding: 14px;
+  border-bottom: 1px solid #f1f1f1;
+  font-size: 13px;
+  color: #444;
+}
+
+.users-table tbody tr:hover {
+  background: #f8f9fc;
+}
+
+.users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ================= FILTER ================= */
+
+.filter-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-icon {
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.filter-icon:hover {
+  opacity: 1;
+}
+
+/* ================= DROPDOWN ================= */
+
+.filter-dropdown {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  width: 140px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  z-index: 9999;
+}
+
+.filter-dropdown div {
+  padding: 10px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #333;
+}
+
+.filter-dropdown div:hover {
+  background: #f2f4f8;
+}
+
+/* ================= TOGGLE SWITCH ================= */
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #e53935;
+  border-radius: 34px;
+  inset: 0;
+  transition: 0.3s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.switch input:checked + .slider {
+  background-color: #2ecc71;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* ================= PAGINATION ================= */
+
+.pagination-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 25px;
+}
+
+.page-btn,
+.arrow-btn {
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid #e0e0e0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-size: 14px;
+}
+
+.page-btn:hover,
+.arrow-btn:hover {
+  background: #f2f4f8;
+}
+
+.page-btn.active {
+  background: #14389C;
+  color: white;
+  border: none;
+}
+
+.arrow-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

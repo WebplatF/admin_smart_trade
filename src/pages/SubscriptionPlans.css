@@ -1,0 +1,242 @@
+/* ================= PAGE ================= */
+
+.plans-page {
+  padding: 30px 35px;
+  background: #f4f6fb;
+  min-height: 100vh;
+  font-family: Inter, sans-serif;
+}
+
+/* ================= HEADER ================= */
+
+.plans-page h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #9aa0b4;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+/* ================= CREATE BUTTON ================= */
+
+.create-btn {
+  background: #2f4fd5;
+  color: white;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.2s;
+}
+
+.create-btn:hover {
+  background: #2440b8;
+}
+
+/* ================= TABLE ================= */
+
+.plans-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* HEADER */
+.plans-table thead {
+  background: #2f4fd5;
+}
+
+.plans-table th {
+  color: white;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: left;
+}
+
+/* BODY */
+.plans-table td {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #444;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.plans-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.plans-table tbody tr:hover {
+  background: #fafbff;
+}
+
+/* ================= PREMIUM EDIT ICON ================= */
+
+.edit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  color: #6b7280; /* stronger base color */
+  transition: all 0.2s ease;
+}
+
+/* ICON */
+.edit-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2; /* thicker = sharper */
+}
+
+/* HOVER */
+.edit-icon:hover {
+  color: #2f4fd5;
+
+  transform: scale(1.2);
+
+  /* glow effect */
+  filter: drop-shadow(0 2px 6px rgba(47,79,213,0.3));
+}
+
+/* CLICK */
+.edit-icon:active {
+  transform: scale(0.95);
+}
+/* ================= FORM CARD ================= */
+
+.form-card {
+  margin-top: 30px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+/* HEADER */
+.form-header {
+  background: #2f4fd5;
+  color: white;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* GRID */
+.form-grid {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+/* INPUTS */
+.form-grid input,
+.form-grid select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #f9fafc;
+  outline: none;
+  transition: 0.2s;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  border-color: #2f4fd5;
+  background: white;
+}
+
+/* BUTTONS */
+.form-buttons {
+  padding: 0 20px 20px;
+  text-align: right;
+}
+
+.cancel-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin-right: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background: #dc2626;
+}
+
+.save-btn {
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.save-btn:hover {
+  background: #16a34a;
+}
+
+/* ================= TOGGLE ================= */
+
+.switch {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  display: inline-block;
+}
+
+.switch input {
+  display: none;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: #d1d5db;
+  border-radius: 20px;
+  transition: 0.2s;
+}
+
+.slider:before {
+  content: "";
+  position: absolute;
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+/* ACTIVE */
+.switch input:checked + .slider {
+  background: #22c55e;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(18px);
+}

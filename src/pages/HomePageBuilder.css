@@ -1,0 +1,226 @@
+/* ── PAGE ── */
+.builder-page {
+  padding: 28px 30px;
+  background: #f4f6fb;
+  font-family: Inter, sans-serif;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.builder-header h1 {
+  font-size: 20px; font-weight: 700;
+  color: #1a1a2e; margin: 0 0 3px;
+}
+.builder-header p { color: #999; font-size: 12px; margin: 0; }
+
+.add-banner-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: #2f4fd5; color: white; border: none;
+  padding: 10px 18px; border-radius: 7px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: Inter, sans-serif;
+  transition: background 0.15s;
+}
+.add-banner-btn:hover { background: #2440b8; }
+
+/* ── EMPTY / LOADING ── */
+.builder-loading { color: #aaa; font-size: 13px; margin: 20px 0; }
+.builder-empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 80px 0;
+  color: #bbb; font-size: 14px;
+  background: white; border-radius: 12px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+}
+
+/* ── BANNER LIST ── */
+.banner-list { display: flex; flex-direction: column; gap: 20px; }
+
+.banner-card {
+  background: white; border-radius: 12px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+.banner-image {
+  height: 200px; background: #edf0f8;
+  display: flex; align-items: center;
+  justify-content: center; overflow: hidden;
+}
+.banner-img { width: 100%; height: 100%; object-fit: cover; }
+.banner-info {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 14px 20px;
+}
+.banner-info h3 {
+  font-size: 15px; font-weight: 700;
+  color: #1a1a2e; margin: 0 0 4px;
+}
+.banner-info p { font-size: 12px; color: #888; margin: 0; }
+.banner-actions {
+  display: flex; align-items: center;
+  gap: 14px; flex-shrink: 0;
+}
+.delete-icon { color: #e53935; cursor: pointer; transition: opacity 0.15s; }
+.delete-icon:hover { opacity: 0.7; }
+
+/* ── TOGGLE ── */
+.switch {
+  position: relative; display: inline-block;
+  width: 38px; height: 20px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: #ccc; border-radius: 20px; transition: 0.2s;
+}
+.slider:before {
+  content: ""; position: absolute;
+  width: 14px; height: 14px;
+  left: 3px; top: 3px;
+  background: white; border-radius: 50%; transition: 0.2s;
+}
+input:checked + .slider { background: #2ecc71; }
+input:checked + .slider:before { transform: translateX(18px); }
+
+/* ── MODAL OVERLAY ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center;
+  justify-content: center; z-index: 1000;
+}
+
+/* ── BANNER MODAL ── */
+.banner-modal {
+  background: white; border-radius: 14px;
+  padding: 24px; width: 500px; max-width: 92vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.modal-top {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 4px;
+}
+.modal-top h3 {
+  font-size: 16px; font-weight: 700;
+  color: #1a1a2e; margin: 0;
+}
+.modal-x {
+  width: 32px; height: 32px;
+  background: #f5f5f5; border: none;
+  border-radius: 8px; display: flex;
+  align-items: center; justify-content: center;
+  cursor: pointer; color: #555; flex-shrink: 0;
+}
+.modal-x:hover { background: #eee; color: #111; }
+
+.banner-modal label {
+  font-size: 12px; font-weight: 600;
+  color: #444; display: block; margin-bottom: -4px;
+}
+.b-input {
+  width: 100%; padding: 10px 13px;
+  border: 1px solid #e0e0e0; border-radius: 8px;
+  font-size: 13px; font-family: Inter, sans-serif;
+  outline: none; box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.b-input:focus { border-color: #2f4fd5; }
+.b-input::placeholder { color: #bbb; }
+
+/* ── IMAGE SELECT BOX ── */
+.img-select-box {
+  width: 100%; height: 130px;
+  background: #f5f7ff;
+  border: 2px dashed #c5d0f5;
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; cursor: pointer;
+  font-size: 12px; color: #aaa;
+  overflow: hidden; position: relative;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.img-select-box:hover { border-color: #2f4fd5; background: #eef1ff; }
+.selected-img-preview {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.img-change-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center;
+  justify-content: center; opacity: 0;
+  transition: opacity 0.2s;
+  color: white; font-size: 12px; font-weight: 600;
+}
+.img-select-box:hover .img-change-overlay { opacity: 1; }
+
+/* ── FORM ERROR ── */
+.form-err {
+  background: #fdeaea; color: #c0392b;
+  font-size: 12px; padding: 8px 12px;
+  border-radius: 6px; margin: 0;
+}
+
+/* ── MODAL BUTTONS ── */
+.modal-buttons {
+  display: flex; justify-content: flex-end;
+  gap: 10px; margin-top: 4px;
+}
+.cancel-btn {
+  background: #f5f5f5; color: #555;
+  border: 1px solid #ddd; padding: 9px 18px;
+  border-radius: 7px; font-size: 13px;
+  font-weight: 600; cursor: pointer;
+  font-family: Inter, sans-serif;
+}
+.cancel-btn:hover { background: #eee; }
+.save-btn {
+  background: #2f4fd5; color: white; border: none;
+  padding: 9px 22px; border-radius: 7px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: Inter, sans-serif; transition: background 0.15s;
+}
+.save-btn:hover:not(:disabled) { background: #2440b8; }
+.save-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* ── IMAGE PICKER MODAL ── */
+.img-picker-modal {
+  background: white; border-radius: 14px;
+  padding: 22px; width: 500px;
+  max-width: 92vw; max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.picker-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-top: 16px;
+}
+.picker-item {
+  border: 2px solid #eee; border-radius: 8px;
+  overflow: hidden; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.picker-item:hover { border-color: #2f4fd5; }
+.picker-item--sel  { border-color: #2f4fd5; }
+.picker-item img {
+  width: 100%; height: 72px;
+  object-fit: cover; display: block;
+}
+.picker-ph {
+  height: 72px; background: #edf0f8;
+  display: flex; align-items: center; justify-content: center;
+}
+.picker-item p {
+  font-size: 11px; color: #444; text-align: center;
+  padding: 5px 6px; margin: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
