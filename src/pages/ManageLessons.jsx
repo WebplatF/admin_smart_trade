@@ -410,7 +410,10 @@ const ManageLessons = ({ course, back }) => {
       {activeLesson && (
         <div className="video-section">
           <div className="video-section-header">
-            <h3 className="video-section-title">Videos — {activeLesson.title}</h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <h3 className="video-section-title">Videos — {activeLesson.title}</h3>
+              <span className="card-count">{lessonVideos.length}</span>
+            </div>
             <button className="add-video-btn" onClick={openVideoPicker}>
               <Plus size={13} /> ADD VIDEO
             </button>
