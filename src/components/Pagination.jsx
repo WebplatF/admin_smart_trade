@@ -1,34 +1,42 @@
 import "./Pagination.css";
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
-  const pages = [];
 
-  for (let i = 1; i <= totalPages; i++) {
+  // 🔥 LIMIT PAGE BUTTONS (PRO UX)
+  const pages = [];
+  const start = Math.max(1, currentPage - 2);
+  const end = Math.min(totalPages, currentPage + 2);
+
+  for (let i = start; i <= end; i++) {
     pages.push(i);
   }
 
   return (
     <div className="pagination-container">
 
-      {/* Previous Button */}
+      {/* PREVIOUS */}
       <button
         className="arrow-btn"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M15 18l-6-6 6-6"
-            stroke="currentColor"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        ‹
       </button>
 
-      {/* Page Numbers */}
+      {/* FIRST PAGE */}
+      {start > 1 && (
+        <>
+          <button
+            className="page-btn"
+            onClick={() => onPageChange(1)}
+          >
+            1
+          </button>
+          {start > 2 && <span style={{ padding: "0 6px" }}>...</span>}
+        </>
+      )}
+
+      {/* MIDDLE PAGES */}
       {pages.map((page) => (
         <button
           key={page}
@@ -39,22 +47,26 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
         </button>
       ))}
 
-      {/* Next Button */}
+      {/* LAST PAGE */}
+      {end < totalPages && (
+        <>
+          {end < totalPages - 1 && <span style={{ padding: "0 6px" }}>...</span>}
+          <button
+            className="page-btn"
+            onClick={() => onPageChange(totalPages)}
+          >
+            {totalPages}
+          </button>
+        </>
+      )}
+
+      {/* NEXT */}
       <button
         className="arrow-btn"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M9 6l6 6-6 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        ›
       </button>
 
     </div>
