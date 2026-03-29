@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import "./HomePageBuilder.css";
-import { Image as ImageIcon, X, Plus, Film, Layout } from "lucide-react";
+import { Image as ImageIcon, X, Plus, Film, Layout, Monitor, Smartphone, Play } from "lucide-react";
 import axiosClient from "../api/axiosClient";
 import { getImages, getVideos, getWasabiFile } from "../api/mediaService";
 import toast from "react-hot-toast";
@@ -12,25 +12,25 @@ const addDemoApi     = (data) => axiosClient.post("/admin/add_demo", data);
 
 const HomePageBuilder = () => {
 
-  /* ── STATE ── */
+  /* ── DATA ── */
   const demoVideoRef = useRef(null);
-  const [previewDemo, setPreviewDemo] = useState(false);
-  const [banners, setBanners]     = useState([]);
-  const [demoVideo, setDemoVideo] = useState(null);
-  const [itemUrls, setItemUrls]   = useState({});
-  const [loading, setLoading]     = useState(false);
+  const [previewDemo, setPreviewDemo]   = useState(false);
+  const [banners, setBanners]           = useState([]);       // all banners
+  const [demoVideos, setDemoVideos]     = useState([]);       // up to 4
+  const [itemUrls, setItemUrls]         = useState({});
+  const [loading, setLoading]           = useState(false);
 
-  /* ── IMAGE BANNER MODAL ── */
-  const [imgModal, setImgModal]       = useState(false);
-  const [bannerTitle, setBannerTitle] = useState("");
-  const [savingImg, setSavingImg]     = useState(false);
-  const [imgFormErr, setImgFormErr]   = useState("");
+  /* ── BANNER MODAL (device: web | mobile) ── */
+  const [bannerModal, setBannerModal]   = useState(null);     // null | "web" | "mobile"
+  const [bannerTitle, setBannerTitle]   = useState("");
+  const [savingBanner, setSavingBanner] = useState(false);
+  const [bannerErr, setBannerErr]       = useState("");
 
-  /* ── VIDEO DEMO MODAL ── */
-  const [vidModal, setVidModal]   = useState(false);
-  const [demoTitle, setDemoTitle] = useState("");
-  const [savingVid, setSavingVid] = useState(false);
-  const [vidFormErr, setVidFormErr] = useState("");
+  /* ── DEMO VIDEO MULTI-SELECT ── */
+  const [demoModal, setDemoModal]       = useState(false);
+  const [selectedVids, setSelectedVids] = useState([]);
+  const [savingVids, setSavingVids]     = useState(false);
+  const [demoErr, setDemoErr]           = useState("");
 
   /* ── IMAGE PICKER ── */
   const [imgPickerOpen, setImgPickerOpen] = useState(false);
@@ -39,29 +39,24 @@ const HomePageBuilder = () => {
   const [selectedImg, setSelectedImg]     = useState(null);
   const [loadingImgs, setLoadingImgs]     = useState(false);
 
-  /* ── VIDEO PICKER ── */
-  const [vidPickerOpen, setVidPickerOpen]   = useState(false);
+  /* ── VIDEO PICKER (multi-select inside modal) ── */
   const [videos, setVideos]                 = useState([]);
   const [videoThumbUrls, setVideoThumbUrls] = useState({});
-  const [selectedVid, setSelectedVid]       = useState(null);
   const [loadingVids, setLoadingVids]       = useState(false);
 
-  /* ── HLS PLAYER FOR DEMO VIDEO ── */
-  useEffect(() => {
-    if (!previewDemo || !demoVideo?.video_id || !demoVideoRef.current) return;
-    const video = demoVideoRef.current;
-    const mediaUrl = `uploads/${demoVideo.video_id}/master.m3u8`;
-    const base = `uploads/${demoVideo.video_id}/`;
+  /* ── HLS PLAYER ── */
+  const [activeDemo, setActiveDemo] = useState(null); // demo video to preview
 
+  useEffect(() => {
+    if (!activeDemo || !demoVideoRef.current) return;
+    const video = demoVideoRef.current;
+    const base = `uploads/${activeDemo.video_id}/`;
+    const mediaUrl = base + "master.m3u8";
     if (video._hls) { video._hls.destroy(); video._hls = null; }
 
     const initPlayer = async () => {
-      // get signed master URL
       let masterSignedUrl = null;
-      try {
-        const r = await getWasabiFile(mediaUrl);
-        masterSignedUrl = r?.data?.data?.wasabi_url || null;
-      } catch {}
+      try { const r = await getWasabiFile(mediaUrl); masterSignedUrl = r?.data?.data?.wasabi_url; } catch {}
       if (!masterSignedUrl) return;
 
       const variants = ["v0.m3u8", "v1.m3u8", "v2.m3u8"];
@@ -96,61 +91,69 @@ const HomePageBuilder = () => {
           }
         }
         const hls = new Hls({ enableWorker: false, loader: WasabiLoader, fLoader: WasabiLoader });
-        hls.loadSource(blobUrl);
-        hls.attachMedia(video);
+        hls.loadSource(blobUrl); hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-        hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) console.error("HLS:", d.details); });
-        video._hls = hls;
-        video._blobUrl = blobUrl;
+        video._hls = hls; video._blobUrl = blobUrl;
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = blobUrl; video.play().catch(() => {});
       }
     };
 
     if (!window.Hls) {
-      const existing = document.querySelector('script[src*="hls.min.js"]');
-      if (!existing) {
-        const script = document.createElement("script");
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js";
-        script.onload = initPlayer;
-        document.head.appendChild(script);
-      } else { initPlayer(); }
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js";
+      s.onload = initPlayer;
+      if (!document.querySelector('script[src*="hls.min.js"]')) document.head.appendChild(s);
+      else initPlayer();
     } else { initPlayer(); }
 
     return () => {
       if (demoVideoRef.current?._hls) { demoVideoRef.current._hls.destroy(); demoVideoRef.current._hls = null; }
-      if (demoVideoRef.current?._blobUrl) { URL.revokeObjectURL(demoVideoRef.current._blobUrl); }
+      if (demoVideoRef.current?._blobUrl) URL.revokeObjectURL(demoVideoRef.current._blobUrl);
     };
-  }, [previewDemo, demoVideo]); // eslint-disable-line
+  }, [activeDemo]); // eslint-disable-line
 
-  /* ── LOAD ── */
+  /* ── LOAD DATA ── */
   const loadData = async () => {
     setLoading(true);
     try {
       const res = await getHomeBuilder();
       if (res.data.status) {
-        const raw = res.data.data;
-        const bannerList = raw?.banner || [];
-        const demoList   = raw?.demo_videos || [];
-        setBanners(bannerList);
-        setDemoVideo(demoList[0] || null);
+        const raw        = res.data.data;
+        const bannerList = raw?.banner       || [];
+        const demoList   = raw?.demo_videos  || [];
 
+        // Latest 4 demo videos
+        const latestDemos = demoList.slice(-4);
+
+        // Resolve wasabi URLs only for items we actually display
         const map = {};
         await Promise.all([
-          ...bannerList.map(async (b, i) => {
-            if (!b.path) { map[`b_${i}`] = null; return; }
-            try { const r = await getWasabiFile(b.path); map[`b_${i}`] = r?.data?.data?.wasabi_url ?? null; }
-            catch { map[`b_${i}`] = null; }
+          // Resolve web banner (even index, latest)
+          (async () => {
+            const evens = bannerList.filter((_, i) => i % 2 === 0);
+            const wb = evens.length > 0 ? evens[evens.length - 1] : null;
+            if (!wb?.path) return;
+            try { const r = await getWasabiFile(wb.path); map["b_web"] = r?.data?.data?.wasabi_url ?? null; }
+            catch { map["b_web"] = null; }
+          })(),
+          // Resolve mobile banner (odd index, latest)
+          (async () => {
+            const odds = bannerList.filter((_, i) => i % 2 === 1);
+            const mb = odds.length > 0 ? odds[odds.length - 1] : null;
+            if (!mb?.path) return;
+            try { const r = await getWasabiFile(mb.path); map["b_mobile"] = r?.data?.data?.wasabi_url ?? null; }
+            catch { map["b_mobile"] = null; }
+          })(),
+          ...latestDemos.map(async (v, i) => {
+            if (!v.thumbnail) { map[`d_${i}`] = null; return; }
+            try { const r = await getWasabiFile(v.thumbnail); map[`d_${i}`] = r?.data?.data?.wasabi_url ?? null; }
+            catch { map[`d_${i}`] = null; }
           }),
-          ...(demoList[0]?.thumbnail ? [async () => {
-            try { const r = await getWasabiFile(demoList[0].thumbnail); map["demo"] = r?.data?.data?.wasabi_url ?? null; }
-            catch { map["demo"] = null; }
-          }] : []),
         ]);
-        if (demoList[0]?.thumbnail) {
-          try { const r = await getWasabiFile(demoList[0].thumbnail); map["demo"] = r?.data?.data?.wasabi_url ?? null; }
-          catch { map["demo"] = null; }
-        }
+
+        setBanners(bannerList);
+        setDemoVideos(latestDemos);
         setItemUrls(map);
       }
     } catch (e) {
@@ -163,7 +166,7 @@ const HomePageBuilder = () => {
 
   /* ── LOAD IMAGES ── */
   const loadImages = async () => {
-    if (images.length > 0) return; // already loaded
+    if (images.length > 0) return;
     setLoadingImgs(true);
     try {
       const res = await getImages();
@@ -181,9 +184,8 @@ const HomePageBuilder = () => {
     finally { setLoadingImgs(false); }
   };
 
-  /* ── LOAD VIDEOS ── */
+  /* ── LOAD VIDEOS FOR PICKER ── */
   const loadVideosForPicker = async () => {
-    if (videos.length > 0) return; // already loaded
     setLoadingVids(true);
     try {
       const res = await getVideos();
@@ -204,54 +206,78 @@ const HomePageBuilder = () => {
 
   /* ── SAVE BANNER ── */
   const saveBanner = async () => {
-    if (!bannerTitle.trim()) return setImgFormErr("Title is required.");
-    if (!selectedImg) return setImgFormErr("Please select an image.");
-    setSavingImg(true); setImgFormErr("");
-    const t = toast.loading("Adding banner...");
+    if (!bannerTitle.trim()) return setBannerErr("Title is required.");
+    if (!selectedImg) return setBannerErr("Please select an image.");
+    setSavingBanner(true); setBannerErr("");
+    const t = toast.loading("Saving banner...");
     try {
-      const res = await addBannerApi({ title: bannerTitle.trim(), image_id: selectedImg.id });
+      const payload = {
+        title: bannerTitle.trim(),
+        image_id: selectedImg.id,
+        device: bannerModal, // "web" or "mobile"
+      };
+      const res = await addBannerApi(payload);
       if (res.data.status !== false) {
-        setImgModal(false); setBannerTitle(""); setSelectedImg(null);
-        setImages([]); // reset so next open reloads
-        loadData();
-        toast.success("Banner added!", { id: t });
+        setBannerModal(null); setBannerTitle(""); setSelectedImg(null);
+        setImages([]);
+        setItemUrls({}); // clear so thumbnails reload fresh
+        await loadData();
+        toast.success("Banner saved!", { id: t });
       } else {
-        setImgFormErr(res.data.message || "Failed to save.");
+        setBannerErr(res.data.message || "Failed.");
         toast.error("Failed", { id: t });
       }
     } catch (e) {
-      setImgFormErr(e.response?.data?.message || "An error occurred.");
+      setBannerErr(e.response?.data?.message || "Error occurred.");
       toast.error("Error", { id: t });
-    } finally { setSavingImg(false); }
+    } finally { setSavingBanner(false); }
   };
 
-  /* ── SAVE DEMO VIDEO ── */
-  const saveDemoVideo = async () => {
-    if (!demoTitle.trim()) return setVidFormErr("Title is required.");
-    if (!selectedVid) return setVidFormErr("Please select a video.");
-    setSavingVid(true); setVidFormErr("");
-    const t = toast.loading("Setting demo video...");
+  /* ── SAVE DEMO VIDEOS (all selected at once) ── */
+  const saveDemoVideos = async () => {
+    if (selectedVids.length === 0) return setDemoErr("Please select at least one video.");
+    setSavingVids(true); setDemoErr("");
+    const t = toast.loading(`Saving ${selectedVids.length} video${selectedVids.length > 1 ? "s" : ""}...`);
     try {
-      const res = await addDemoApi({ title: demoTitle.trim(), video_id: Number(selectedVid.id) });
-      if (res.data.status !== false) {
-        setVidModal(false); setDemoTitle(""); setSelectedVid(null);
-        setVideos([]); // reset
-        loadData();
-        toast.success("Demo video set!", { id: t });
-      } else {
-        setVidFormErr(res.data.message || "Failed to save.");
-        toast.error("Failed", { id: t });
+      // Send each selected video sequentially
+      for (const vid of selectedVids) {
+        await addDemoApi({ title: vid.video_id, video_id: Number(vid.id) });
       }
+      setDemoModal(false); setSelectedVids([]);
+      setVideos([]);
+      setItemUrls({});
+      await loadData();
+      toast.success(`${selectedVids.length} video${selectedVids.length > 1 ? "s" : ""} added!`, { id: t });
     } catch (e) {
-      setVidFormErr(e.response?.data?.message || "An error occurred.");
-      toast.error("Error", { id: t });
-    } finally { setSavingVid(false); }
+      setDemoErr(e.response?.data?.message || "Error occurred.");
+      toast.error("Error saving videos", { id: t });
+    } finally { setSavingVids(false); }
   };
+
+  /* ── TOGGLE VIDEO SELECTION ── */
+  const toggleVidSelect = (vid) => {
+    setSelectedVids(prev => {
+      const exists = prev.find(v => v.id === vid.id);
+      if (exists) return prev.filter(v => v.id !== vid.id);
+      if (prev.length >= 4) { setDemoErr("Maximum 4 videos allowed."); return prev; }
+      setDemoErr("");
+      return [...prev, vid];
+    });
+  };
+
+  // Banners alternate: web added first(even idx 0,2,4..), mobile second(odd idx 1,3,5..)
+  // Show the latest of each type
+  const evenBanners  = banners.filter((_, i) => i % 2 === 0); // web banners
+  const oddBanners   = banners.filter((_, i) => i % 2 === 1); // mobile banners
+  const webBanner    = evenBanners.length > 0 ? evenBanners[evenBanners.length - 1] : null;
+  const mobileBanner = oddBanners.length  > 0 ? oddBanners[oddBanners.length - 1]  : null;
+  // Find actual index in original array for URL lookup
+  const webBannerIdx    = webBanner    ? banners.lastIndexOf(webBanner)    : -1;
+  const mobileBannerIdx = mobileBanner ? banners.lastIndexOf(mobileBanner) : -1;
 
   return (
     <div className="builder-page">
 
-      {/* GLOBAL LOADER */}
       {loading && (
         <div className="global-loader">
           <div className="loader-box">
@@ -261,50 +287,137 @@ const HomePageBuilder = () => {
         </div>
       )}
 
-      {/* ── PAGE HEADER ── */}
-      <div className="builder-page-header">
-        <div className="builder-page-header-left">
-          <div className="builder-page-icon"><Layout size={20} color="#2f4fd5" /></div>
-          <div>
-            <h1>Home Page Builder</h1>
-            <p>Manage your homepage content and featured media</p>
-          </div>
+      {/* PAGE HEADER */}
+      <div className="hb-page-header">
+        <div className="hb-page-icon"><Layout size={20} color="#2f4fd5" /></div>
+        <div>
+          <h1>Home Page Builder</h1>
+          <p>Manage homepage content, banners and featured media</p>
         </div>
       </div>
 
-      {/* ── BANNERS SECTION ── */}
+      {/* ══ BANNERS SECTION ══ */}
       <div className="hb-section">
         <div className="hb-section-header">
           <div className="hb-section-title-wrap">
             <ImageIcon size={16} color="#2f4fd5" />
             <h2>Hero Banners</h2>
-            <span className="hb-count">{banners.length}</span>
           </div>
-          <button className="hb-add-btn" onClick={() => { setImgFormErr(""); setBannerTitle(""); setSelectedImg(null); setImgModal(true); }}>
-            <Plus size={13} /> ADD BANNER
+        </div>
+
+        <div className="hb-banners-row">
+
+          {/* WEB BANNER */}
+          <div className="hb-device-slot">
+            <div className="hb-device-label">
+              <Monitor size={14} color="#2f4fd5" />
+              <span>Website Banner</span>
+            </div>
+            {webBanner ? (
+              <div className="hb-banner-preview">
+                <div className="hb-banner-img-box">
+                  {itemUrls["b_web"]
+                    ? <img src={itemUrls["b_web"]} alt={webBanner.title} />
+                    : <div className="hb-img-ph"><ImageIcon size={28} color="#c5d0f5" /></div>}
+                  <span className="hb-device-badge"><Monitor size={10} /> Web</span>
+                </div>
+                <div className="hb-banner-meta">
+                  <span className="hb-banner-name">{webBanner.title}</span>
+                  <button className="hb-change-btn" onClick={() => { setBannerErr(""); setBannerTitle(""); setSelectedImg(null); setImages([]); setBannerModal("web"); }}>
+                    Change
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="hb-device-empty" onClick={() => { setBannerErr(""); setBannerTitle(""); setSelectedImg(null); setImages([]); setBannerModal("web"); }}>
+                <Plus size={22} color="#c5d0f5" />
+                <p>Add Website Banner</p>
+              </div>
+            )}
+          </div>
+
+          {/* MOBILE BANNER */}
+          <div className="hb-device-slot">
+            <div className="hb-device-label">
+              <Smartphone size={14} color="#27ae60" />
+              <span>Mobile Banner</span>
+            </div>
+            {mobileBanner ? (
+              <div className="hb-banner-preview">
+                <div className="hb-banner-img-box">
+                  {itemUrls["b_mobile"]
+                    ? <img src={itemUrls["b_mobile"]} alt={mobileBanner.title} />
+                    : <div className="hb-img-ph"><ImageIcon size={28} color="#c5d0f5" /></div>}
+                  <span className="hb-device-badge hb-device-badge--mobile"><Smartphone size={10} /> Mobile</span>
+                </div>
+                <div className="hb-banner-meta">
+                  <span className="hb-banner-name">{mobileBanner.title}</span>
+                  <button className="hb-change-btn hb-change-btn--mobile" onClick={() => { setBannerErr(""); setBannerTitle(""); setSelectedImg(null); setImages([]); setBannerModal("mobile"); }}>
+                    Change
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="hb-device-empty hb-device-empty--mobile" onClick={() => { setBannerErr(""); setBannerTitle(""); setSelectedImg(null); setImages([]); setBannerModal("mobile"); }}>
+                <Plus size={22} color="#b8f0d0" />
+                <p>Add Mobile Banner</p>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* ══ DEMO VIDEOS SECTION ══ */}
+      <div className="hb-section">
+        <div className="hb-section-header">
+          <div className="hb-section-title-wrap">
+            <Film size={16} color="#6c3fc5" />
+            <h2>Demo Videos</h2>
+            <span className="hb-count">{demoVideos.length} / 4</span>
+          </div>
+          <button className="hb-add-btn hb-add-btn--video"
+            onClick={() => { setDemoErr(""); setSelectedVids([]); setVideos([]); setDemoModal(true); loadVideosForPicker(); }}>
+            <Film size={13} /> {demoVideos.length === 0 ? "ADD VIDEOS" : "MANAGE VIDEOS"}
           </button>
         </div>
 
-        {banners.length === 0 ? (
+        {demoVideos.length === 0 ? (
           <div className="hb-empty">
-            <div className="hb-empty-icon"><ImageIcon size={32} color="#c5d0f5" /></div>
-            <p className="hb-empty-title">No banners added yet</p>
-            <p className="hb-empty-sub">Add hero banners to showcase on your homepage</p>
+            <div className="hb-empty-icon hb-empty-icon--video"><Film size={28} color="#c5b8f5" /></div>
+            <p className="hb-empty-title">No demo videos added</p>
+            <p className="hb-empty-sub">Add up to 4 featured videos for your homepage</p>
+            <button className="hb-add-btn hb-add-btn--video" style={{ marginTop: 12 }}
+              onClick={() => { setDemoErr(""); setSelectedVids([]); setVideos([]); setDemoModal(true); loadVideosForPicker(); }}>
+              <Plus size={13} /> ADD VIDEOS
+            </button>
           </div>
         ) : (
-          <div className="hb-banner-grid">
-            {banners.map((banner, i) => (
-              <div className="hb-banner-card" key={i}>
-                <div className="hb-banner-img-wrap">
-                  {itemUrls[`b_${i}`]
-                    ? <img src={itemUrls[`b_${i}`]} alt={banner.title} />
-                    : <div className="hb-img-ph"><ImageIcon size={28} color="#c5d0f5" /></div>}
-                  <div className="hb-banner-overlay">
-                    <span className="hb-type-pill"><ImageIcon size={10} /> Banner</span>
+          <div className="hb-demo-grid">
+            {demoVideos.map((v, i) => (
+              <div className="hb-demo-card" key={i}>
+                <div className="hb-demo-thumb" onClick={() => setActiveDemo(v)}>
+                  {itemUrls[`d_${i}`]
+                    ? <img src={itemUrls[`d_${i}`]} alt={v.title} />
+                    : <div className="hb-img-ph hb-img-ph--dark"><Film size={28} color="#c5b8f5" /></div>}
+                  <div className="hb-demo-overlay">
+                    <div className="hb-play-btn"><Play size={16} color="white" fill="white" /></div>
                   </div>
+                  <span className="hb-slot-badge">#{i + 1}</span>
                 </div>
-                <div className="hb-banner-footer">
-                  <span className="hb-banner-title">{banner.title}</span>
+                <div className="hb-demo-footer">
+                  <p className="hb-demo-title">{v.title}</p>
+                  <p className="hb-demo-vid-id">{v.video_id}</p>
+                </div>
+              </div>
+            ))}
+            {/* Empty slots */}
+            {Array.from({ length: 4 - demoVideos.length }).map((_, i) => (
+              <div className="hb-demo-card hb-demo-card--empty" key={`empty_${i}`}
+                onClick={() => { setDemoErr(""); setSelectedVids([]); setVideos([]); setDemoModal(true); loadVideosForPicker(); }}>
+                <div className="hb-demo-thumb hb-demo-thumb--empty">
+                  <Plus size={24} color="#c5b8f5" />
+                  <p>Add Video</p>
                 </div>
               </div>
             ))}
@@ -312,56 +425,20 @@ const HomePageBuilder = () => {
         )}
       </div>
 
-      {/* ── DEMO VIDEO SECTION ── */}
-      <div className="hb-section">
-        <div className="hb-section-header">
-          <div className="hb-section-title-wrap">
-            <Film size={16} color="#6c3fc5" />
-            <h2>Demo Video</h2>
-          </div>
-          <button className="hb-add-btn hb-add-btn--video"
-            onClick={() => { setVidFormErr(""); setDemoTitle(demoVideo?.title || ""); setSelectedVid(null); setVideos([]); setVidModal(true); }}>
-            <Film size={13} /> {demoVideo ? "CHANGE VIDEO" : "SET VIDEO"}
-          </button>
-        </div>
-
-        {demoVideo ? (
-          <div className="hb-demo-card" onClick={() => setPreviewDemo(true)} style={{ cursor: "pointer" }}>
-            <div className="hb-demo-thumb">
-              {itemUrls["demo"]
-                ? <img src={itemUrls["demo"]} alt={demoVideo.title} />
-                : <div className="hb-img-ph"><Film size={32} color="#c5d0f5" /></div>}
-              <div className="hb-demo-play">
-                <div className="hb-play-circle"><Film size={22} color="white" /></div>
-              </div>
-              <span className="hb-type-pill hb-type-pill--video"><Film size={10} /> Demo Video</span>
-            </div>
-            <div className="hb-demo-info">
-              <h3>{demoVideo.title}</h3>
-              <p className="hb-demo-meta">Video ID: <strong>{demoVideo.video_id}</strong></p>
-            </div>
-          </div>
-        ) : (
-          <div className="hb-empty">
-            <div className="hb-empty-icon hb-empty-icon--video"><Film size={32} color="#c5b8f5" /></div>
-            <p className="hb-empty-title">No demo video set</p>
-            <p className="hb-empty-sub">Feature a video on your homepage to engage visitors</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── ADD BANNER MODAL ── */}
-      {imgModal && (
-        <div className="modal-overlay" onClick={() => setImgModal(false)}>
+      {/* ══ BANNER MODAL ══ */}
+      {bannerModal && (
+        <div className="modal-overlay" onClick={() => setBannerModal(null)}>
           <div className="hb-modal" onClick={(e) => e.stopPropagation()}>
             <div className="hb-modal-header">
               <div className="hb-modal-title-wrap">
-                <div className="hb-modal-icon"><ImageIcon size={15} color="#2f4fd5" /></div>
-                <h3>Add Hero Banner</h3>
+                <div className={`hb-modal-icon ${bannerModal === "mobile" ? "hb-modal-icon--green" : ""}`}>
+                  {bannerModal === "web" ? <Monitor size={15} color="#2f4fd5" /> : <Smartphone size={15} color="#27ae60" />}
+                </div>
+                <h3>{bannerModal === "web" ? "Website Banner" : "Mobile Banner"}</h3>
               </div>
-              <button className="hb-modal-close" onClick={() => setImgModal(false)}><X size={15} /></button>
+              <button className="hb-modal-close" onClick={() => setBannerModal(null)}><X size={15} /></button>
             </div>
-            {imgFormErr && <p className="hb-form-err">{imgFormErr}</p>}
+            {bannerErr && <p className="hb-form-err">{bannerErr}</p>}
             <div className="hb-field">
               <label>Banner Title</label>
               <input className="hb-input" placeholder="Enter banner title..."
@@ -369,64 +446,112 @@ const HomePageBuilder = () => {
                 onKeyDown={(e) => e.key === "Enter" && saveBanner()} />
             </div>
             <div className="hb-field">
-              <label>Image</label>
-              <div className="hb-img-select" onClick={() => { setImgPickerOpen(true); loadImages(); }}>
+              <label>Image <span className="hb-field-hint">{bannerModal === "mobile" ? "(Portrait recommended)" : "(Landscape recommended)"}</span></label>
+              <div className={`hb-img-select ${bannerModal === "mobile" ? "hb-img-select--mobile" : ""}`}
+                onClick={() => { setImgPickerOpen(true); loadImages(); }}>
                 {selectedImg?.url
-                  ? <><img src={selectedImg.url} alt="selected" className="hb-img-selected" />
-                      <div className="hb-img-change"><span>Click to change</span></div></>
+                  ? <><img src={selectedImg.url} alt="selected" className="hb-img-selected" /><div className="hb-img-change"><span>Click to change</span></div></>
                   : <><ImageIcon size={22} color="#bbb" /><span>Click to select from Media Library</span></>}
               </div>
             </div>
             <div className="hb-modal-footer">
-              <button className="hb-cancel-btn" onClick={() => setImgModal(false)}>Cancel</button>
-              <button className="hb-save-btn" onClick={saveBanner} disabled={savingImg}>
-                {savingImg ? "Saving..." : "Add Banner"}
+              <button className="hb-cancel-btn" onClick={() => setBannerModal(null)}>Cancel</button>
+              <button className={`hb-save-btn ${bannerModal === "mobile" ? "hb-save-btn--green" : ""}`}
+                onClick={saveBanner} disabled={savingBanner}>
+                {savingBanner ? "Saving..." : "Save Banner"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── SET DEMO VIDEO MODAL ── */}
-      {vidModal && (
-        <div className="modal-overlay" onClick={() => setVidModal(false)}>
-          <div className="hb-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="hb-modal-header">
+      {/* ══ DEMO VIDEO MULTI-SELECT MODAL ══ */}
+      {demoModal && (
+        <div className="modal-overlay" onClick={() => setDemoModal(false)}>
+          <div className="hb-demo-select-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="hb-demo-modal-header">
               <div className="hb-modal-title-wrap">
                 <div className="hb-modal-icon hb-modal-icon--video"><Film size={15} color="#6c3fc5" /></div>
-                <h3>Set Demo Video</h3>
+                <div>
+                  <h3>Select Demo Videos</h3>
+                  <p className="hb-modal-sub">Choose up to 4 videos for your homepage</p>
+                </div>
               </div>
-              <button className="hb-modal-close" onClick={() => setVidModal(false)}><X size={15} /></button>
+              <button className="hb-modal-close" onClick={() => setDemoModal(false)}><X size={15} /></button>
             </div>
-            {vidFormErr && <p className="hb-form-err">{vidFormErr}</p>}
-            <div className="hb-field">
-              <label>Video Title</label>
-              <input className="hb-input" placeholder="Enter demo video title..."
-                value={demoTitle} onChange={(e) => setDemoTitle(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && saveDemoVideo()} />
-            </div>
-            <div className="hb-field">
-              <label>Video</label>
-              <div className="hb-img-select hb-vid-select" onClick={() => { setVidPickerOpen(true); loadVideosForPicker(); }}>
-                {selectedVid
-                  ? <><img src={videoThumbUrls[selectedVid.id] || ""} alt={selectedVid.video_id}
-                        className="hb-img-selected" onError={(e) => e.target.style.display="none"} />
-                      <div className="hb-img-change"><span>Click to change</span></div></>
-                  : <><Film size={22} color="#bbb" /><span>Click to select from Media Library</span></>}
+
+            {/* Selection counter */}
+            <div className="hb-select-counter">
+              <div className="hb-select-slots">
+                {[0,1,2,3].map(i => (
+                  <div key={i} className={`hb-select-slot${selectedVids[i] ? " hb-select-slot--filled" : ""}`}>
+                    {selectedVids[i]
+                      ? <><div className="hb-slot-thumb">
+                            {videoThumbUrls[selectedVids[i].id]
+                              ? <img src={videoThumbUrls[selectedVids[i].id]} alt="" />
+                              : <Film size={12} color="#c5b8f5" />}
+                          </div>
+                          <span>{selectedVids[i].video_id}</span>
+                          <button className="hb-slot-remove" onClick={() => toggleVidSelect(selectedVids[i])}>
+                            <X size={10} />
+                          </button></>
+                      : <><div className="hb-slot-empty-icon"><Plus size={14} color="#c5b8f5" /></div>
+                          <span>Slot {i + 1}</span></>}
+                  </div>
+                ))}
               </div>
-              {selectedVid && <p className="hb-selected-name"><Film size={11} /> {selectedVid.video_id}</p>}
+              <span className="hb-select-count-badge">{selectedVids.length}/4 selected</span>
             </div>
-            <div className="hb-modal-footer">
-              <button className="hb-cancel-btn" onClick={() => setVidModal(false)}>Cancel</button>
-              <button className="hb-save-btn hb-save-btn--video" onClick={saveDemoVideo} disabled={savingVid}>
-                {savingVid ? "Saving..." : "Set Video"}
-              </button>
+
+            {demoErr && <p className="hb-form-err" style={{ margin: "0 0 4px" }}>{demoErr}</p>}
+
+            {/* Video grid */}
+            {loadingVids ? (
+              <div className="hb-picker-loading"><div className="loader-spinner" style={{ width: 28, height: 28, borderWidth: 3 }} /><p>Loading videos...</p></div>
+            ) : (
+              <div className="hb-demo-picker-grid">
+                {videos.map(v => {
+                  const isSelected = selectedVids.find(s => s.id === v.id);
+                  const selIndex   = selectedVids.findIndex(s => s.id === v.id);
+                  const isCompleted = v.media_url && v.media_url.includes("master.m3u8");
+                  return (
+                    <div key={v.id}
+                      className={`hb-demo-picker-card${isSelected ? " hb-demo-picker-card--sel" : ""}${!isCompleted ? " hb-demo-picker-card--pending" : ""}`}
+                      onClick={() => isCompleted && toggleVidSelect(v)}>
+                      <div className="hb-demo-picker-thumb">
+                        {videoThumbUrls[v.id]
+                          ? <img src={videoThumbUrls[v.id]} alt={v.video_id} />
+                          : <div className="hb-picker-ph hb-picker-ph--video"><Film size={18} color="#c5b8f5" /></div>}
+                        {isSelected && (
+                          <div className="hb-demo-picker-sel-badge">{selIndex + 1}</div>
+                        )}
+                        {!isCompleted && <div className="hb-demo-picker-pending">Pending</div>}
+                      </div>
+                      <div className="hb-demo-picker-info">
+                        <p className="hb-demo-picker-id">{v.video_id}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {videos.length === 0 && <p className="hb-picker-empty" style={{ gridColumn: "span 4" }}>No videos in Media Library.</p>}
+              </div>
+            )}
+
+            <div className="hb-demo-modal-footer">
+              <span className="hb-demo-footer-hint">Click videos to select · Click again to deselect</span>
+              <div style={{ display:"flex", gap:10 }}>
+                <button className="hb-cancel-btn" onClick={() => setDemoModal(false)}>Cancel</button>
+                <button className="hb-save-btn hb-save-btn--video" onClick={saveDemoVideos}
+                  disabled={savingVids || selectedVids.length === 0}>
+                  {savingVids ? "Saving..." : `Add ${selectedVids.length} Video${selectedVids.length !== 1 ? "s" : ""}`}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── IMAGE PICKER ── */}
+      {/* ══ IMAGE PICKER ══ */}
       {imgPickerOpen && (
         <div className="modal-overlay" onClick={() => setImgPickerOpen(false)}>
           <div className="hb-picker-modal" onClick={(e) => e.stopPropagation()}>
@@ -440,12 +565,9 @@ const HomePageBuilder = () => {
             {loadingImgs ? <p className="hb-loading">Loading images...</p> : (
               <div className="hb-picker-grid">
                 {images.map(img => (
-                  <div key={img.id}
-                    className={`hb-picker-item${selectedImg?.id === img.id ? " hb-picker-item--sel" : ""}`}
+                  <div key={img.id} className={`hb-picker-item${selectedImg?.id === img.id ? " hb-picker-item--sel" : ""}`}
                     onClick={() => { setSelectedImg({ id: img.id, url: imageUrls[img.id] }); setImgPickerOpen(false); }}>
-                    {imageUrls[img.id]
-                      ? <img src={imageUrls[img.id]} alt={img.title} />
-                      : <div className="hb-picker-ph"><ImageIcon size={18} color="#c5d0f5" /></div>}
+                    {imageUrls[img.id] ? <img src={imageUrls[img.id]} alt={img.title} /> : <div className="hb-picker-ph"><ImageIcon size={18} color="#c5d0f5" /></div>}
                     <p>{img.title}</p>
                   </div>
                 ))}
@@ -456,46 +578,21 @@ const HomePageBuilder = () => {
         </div>
       )}
 
-      {/* ── VIDEO PICKER ── */}
-      {vidPickerOpen && (
-        <div className="modal-overlay" onClick={() => setVidPickerOpen(false)}>
-          <div className="hb-picker-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="hb-modal-header">
-              <div className="hb-modal-title-wrap">
-                <div className="hb-modal-icon hb-modal-icon--video"><Film size={15} color="#6c3fc5" /></div>
-                <h3>Select Video</h3>
-              </div>
-              <button className="hb-modal-close" onClick={() => setVidPickerOpen(false)}><X size={15} /></button>
-            </div>
-            {loadingVids ? <p className="hb-loading">Loading videos...</p> : (
-              <div className="hb-picker-grid">
-                {videos.map(v => (
-                  <div key={v.id}
-                    className={`hb-picker-item${selectedVid?.id === v.id ? " hb-picker-item--sel" : ""}`}
-                    onClick={() => { setSelectedVid(v); setVidPickerOpen(false); }}>
-                    {videoThumbUrls[v.id]
-                      ? <img src={videoThumbUrls[v.id]} alt={v.video_id} />
-                      : <div className="hb-picker-ph hb-picker-ph--video"><Film size={18} color="#c5b8f5" /></div>}
-                    <p>{v.video_id}</p>
-                  </div>
-                ))}
-                {videos.length === 0 && <p className="hb-picker-empty">No videos in Media Library.</p>}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* ── DEMO VIDEO PREVIEW MODAL ── */}
-      {previewDemo && demoVideo && (
-        <div className="modal-overlay" onClick={() => setPreviewDemo(false)}>
+
+      {/* ══ VIDEO PREVIEW MODAL ══ */}
+      {activeDemo && (
+        <div className="modal-overlay" onClick={() => setActiveDemo(null)}>
           <div className="hb-vid-preview-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="hb-modal-header" style={{ padding: "14px 18px", borderBottom: "1px solid #f0f0f0" }}>
+            <div className="hb-vid-preview-header">
               <div className="hb-modal-title-wrap">
                 <div className="hb-modal-icon hb-modal-icon--video"><Film size={15} color="#6c3fc5" /></div>
-                <h3>{demoVideo.title}</h3>
+                <div>
+                  <h3>{activeDemo.title}</h3>
+                  <p className="hb-vid-id">{activeDemo.video_id}</p>
+                </div>
               </div>
-              <button className="hb-modal-close" onClick={() => setPreviewDemo(false)}><X size={15} /></button>
+              <button className="hb-modal-close" onClick={() => setActiveDemo(null)}><X size={15} /></button>
             </div>
             <div className="hb-vid-wrap">
               <video ref={demoVideoRef} className="hb-vid-player" controls>

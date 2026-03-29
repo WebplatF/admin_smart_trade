@@ -347,7 +347,7 @@ const ManageLessons = ({ course, back }) => {
           <thead>
             <tr>
               <th>Title</th>
-              <th className="col-dur-th">Duration</th>
+              <th className="col-dur-th">Videos</th>
               <th className="col-actions-th">Actions</th>
             </tr>
           </thead>
@@ -369,7 +369,9 @@ const ManageLessons = ({ course, back }) => {
                     <span className="lesson-title-text">{lesson.title}</span>
                   )}
                 </td>
-                <td className="td-sm">—</td>
+                <td className="td-sm">
+                  <span className="vid-count-badge">{lesson.video_count ?? 0}</span>
+                </td>
                 <td>
                   <div className="lesson-actions">
                     {editingId === lesson.id ? (
