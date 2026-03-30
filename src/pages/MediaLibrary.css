@@ -391,3 +391,14 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.75); }
 }
+
+/* ── TABLE EMPTY STATE ── */
+.tbl-empty { padding: 32px 12px !important; text-align: center; }
+.tbl-empty-inner {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+}
+.tbl-empty-inner p {
+  font-size: 13px; color: #bbb;
+  font-weight: 500; margin: 0;
+}

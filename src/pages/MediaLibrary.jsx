@@ -266,19 +266,14 @@ const MediaLibrary = () => {
   };
 
   const totalFiles = images.length + videos.length;
-  const imgRows = images.length > 0 ? images
-    : Array(3).fill(null).map((_, i) => ({ id: i, title: "Sample Image", updated_at: null, status: 1, _mock: true }));
+  const imgRows = images;
 
-  // Merge real videos + pending ones that aren't in real list yet
+  // Merge pending + real videos
   const realVideoIds = new Set(videos.map(v => v.video_id));
   const pendingRows  = pendingVids
     .filter(p => !realVideoIds.has(p.uploadId))
     .map(p => ({ _pending: true, video_id: p.uploadId, title: p.title, id: p.uploadId }));
-  const vidRows = [...pendingRows, ...(videos.length > 0 ? videos : [])];
-  const showVidMock = vidRows.length === 0;
-  const finalVidRows = showVidMock
-    ? Array(3).fill(null).map((_, i) => ({ id: i, video_id: "Sample Video", thumbnail: null, status: false, duration: null, _mock: true }))
-    : vidRows;
+  const finalVidRows = [...pendingRows, ...videos];
 
   return (
     <div className="media-page">
@@ -314,19 +309,26 @@ const MediaLibrary = () => {
               <th className="col-status">Status</th>
             </tr></thead>
             <tbody>
-              {imgRows.map((img, i) => (
-                <tr key={img._mock ? `mi${i}` : img.id}>
+              {imgRows.length === 0 ? (
+                <tr><td colSpan="4" className="tbl-empty">
+                  <div className="tbl-empty-inner">
+                    <Image size={28} color="#dde3f0" />
+                    <p>No images uploaded yet</p>
+                  </div>
+                </td></tr>
+              ) : imgRows.map((img) => (
+                <tr key={img.id}>
                   <td>
-                    <div className="thumb-wrap" onClick={() => !img._mock && imageUrls[img.id] && (setPreviewData({ src: imageUrls[img.id], title: img.title }), setPreviewOpen(true))}>
-                      <img className="row-thumb" src={img._mock ? "/no-image.png" : (imageUrls[img.id] || "/no-image.png")} alt={img.title} style={{ cursor: img._mock ? "default" : "pointer" }} />
-                      {!img._mock && imageUrls[img.id] && <div className="thumb-overlay"><Eye size={14} color="white" /></div>}
+                    <div className="thumb-wrap" onClick={() => imageUrls[img.id] && (setPreviewData({ src: imageUrls[img.id], title: img.title }), setPreviewOpen(true))}>
+                      <img className="row-thumb" src={imageUrls[img.id] || "/no-image.png"} alt={img.title} />
+                      {imageUrls[img.id] && <div className="thumb-overlay"><Eye size={14} color="white" /></div>}
                     </div>
                   </td>
                   <td className="td-title">{img.title}</td>
                   <td className="td-sm">{fmtDate(img.updated_at)}</td>
                   <td>
                     <label className="toggle">
-                      <input type="checkbox" checked={!img.status} onChange={() => !img._mock && toggleImgStatus(img)} />
+                      <input type="checkbox" checked={!img.status} onChange={() => toggleImgStatus(img)} />
                       <span className="tog-track" />
                     </label>
                   </td>
@@ -377,11 +379,18 @@ const MediaLibrary = () => {
               <th className="col-status">Status</th>
             </tr></thead>
             <tbody>
-              {finalVidRows.map((vid, i) => {
+              {finalVidRows.length === 0 ? (
+                <tr><td colSpan="4" className="tbl-empty">
+                  <div className="tbl-empty-inner">
+                    <Film size={28} color="#dde3f0" />
+                    <p>No videos uploaded yet</p>
+                  </div>
+                </td></tr>
+              ) : finalVidRows.map((vid, i) => {
                 const isPending = !!vid._pending;
-                const isCompleted = !isPending && !vid._mock && vid.media_url?.includes("master.m3u8");
+                const isCompleted = !isPending && vid.media_url?.includes("master.m3u8");
                 return (
-                  <tr key={vid._mock ? `mv${i}` : (vid._pending ? `p_${vid.id}` : vid.id)}>
+                  <tr key={vid._pending ? `p_${vid.id}` : vid.id}>
                     <td>
                       {isPending ? (
                         /* Pending: show pulsing placeholder */
