@@ -412,3 +412,47 @@
   justify-content: center; gap: 12px; padding: 40px;
   color: #aaa; font-size: 13px;
 }
+
+/* ══ WEEKLY MEETING — CYAN THEME ══ */
+.hb-count--cyan { background: #e0f7fa; color: #0891b2; }
+
+.hb-add-btn--cyan { background: #0891b2; }
+.hb-add-btn--cyan:hover { background: #0770a2; }
+
+.hb-empty-icon--cyan { background: #e0f7fa; }
+
+.hb-play-btn--cyan { background: rgba(8,145,178,0.85); }
+
+.hb-slot-badge--cyan { background: rgba(8,145,178,0.75); }
+
+.hb-demo-card--empty-cyan {
+  border: 2px dashed #a5d8e8; background: #f0fafd;
+}
+.hb-demo-card--empty-cyan:hover { border-color: #0891b2; background: #e0f7fa; }
+
+.hb-demo-thumb--empty-cyan {
+  background: #e0f7fa; height: 120px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+}
+.hb-demo-thumb--empty-cyan p { font-size: 11px; color: #67c8e0; font-weight: 600; margin: 0; }
+
+.hb-modal-icon--cyan { background: #e0f7fa; }
+
+.hb-select-slot--cyan {
+  border-color: #0891b2; background: #e0f7fa; color: #0891b2;
+}
+
+.hb-slot-remove--cyan { background: #b2ebf2; color: #0891b2; }
+.hb-slot-remove--cyan:hover { background: #80deea; }
+
+.hb-select-count-badge--cyan { background: #0891b2; }
+
+.hb-demo-picker-card--sel-cyan {
+  border-color: #0891b2;
+  box-shadow: 0 0 0 3px rgba(8,145,178,0.2);
+}
+.hb-demo-picker-sel-badge--cyan { background: #0891b2; }
+
+.hb-save-btn--cyan { background: #0891b2; }
+.hb-save-btn--cyan:hover:not(:disabled) { background: #0770a2; }

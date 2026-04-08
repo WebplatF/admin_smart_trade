@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 const getHomeBuilder = ()     => axiosClient.get("/admin/home_builder");
 const addBannerApi   = (data) => axiosClient.post("/admin/add_banner", data);
 const addDemoApi     = (data) => axiosClient.post("/admin/add_demo", data);
+const addWeeklyApi   = (data) => axiosClient.post("/admin/add_weekly", data);
 
 const HomePageBuilder = () => {
 
@@ -17,6 +18,7 @@ const HomePageBuilder = () => {
   const [previewDemo, setPreviewDemo]   = useState(false);
   const [banners, setBanners]           = useState([]);       // all banners
   const [demoVideos, setDemoVideos]     = useState([]);       // up to 4
+  const [weeklyVideos, setWeeklyVideos] = useState([]);       // up to 4
   const [itemUrls, setItemUrls]         = useState({});
   const [loading, setLoading]           = useState(false);
 
@@ -31,6 +33,12 @@ const HomePageBuilder = () => {
   const [selectedVids, setSelectedVids] = useState([]);
   const [savingVids, setSavingVids]     = useState(false);
   const [demoErr, setDemoErr]           = useState("");
+
+  /* ── WEEKLY MEETING MULTI-SELECT ── */
+  const [weeklyModal, setWeeklyModal]       = useState(false);
+  const [selectedWeekly, setSelectedWeekly] = useState([]);
+  const [savingWeekly, setSavingWeekly]     = useState(false);
+  const [weeklyErr, setWeeklyErr]           = useState("");
 
   /* ── IMAGE PICKER ── */
   const [imgPickerOpen, setImgPickerOpen] = useState(false);
@@ -121,10 +129,12 @@ const HomePageBuilder = () => {
       if (res.data.status) {
         const raw        = res.data.data;
         const bannerList = raw?.banner       || [];
-        const demoList   = raw?.demo_videos  || [];
+        const demoList    = raw?.demo_videos    || [];
+        const weeklyList  = raw?.weekly_meeting || [];
 
-        // Latest 4 demo videos
-        const latestDemos = demoList.slice(-4);
+        // Latest 4 of each
+        const latestDemos  = demoList.slice(-4);
+        const latestWeekly = weeklyList.slice(-4);
 
         // Resolve wasabi URLs only for items we actually display
         const map = {};
@@ -150,10 +160,16 @@ const HomePageBuilder = () => {
             try { const r = await getWasabiFile(v.thumbnail); map[`d_${i}`] = r?.data?.data?.wasabi_url ?? null; }
             catch { map[`d_${i}`] = null; }
           }),
+          ...latestWeekly.map(async (v, i) => {
+            if (!v.thumbnail) { map[`w_${i}`] = null; return; }
+            try { const r = await getWasabiFile(v.thumbnail); map[`w_${i}`] = r?.data?.data?.wasabi_url ?? null; }
+            catch { map[`w_${i}`] = null; }
+          }),
         ]);
 
         setBanners(bannerList);
         setDemoVideos(latestDemos);
+        setWeeklyVideos(latestWeekly);
         setItemUrls(map);
       }
     } catch (e) {
@@ -261,6 +277,37 @@ const HomePageBuilder = () => {
       if (exists) return prev.filter(v => v.id !== vid.id);
       if (prev.length >= 4) { setDemoErr("Maximum 4 videos allowed."); return prev; }
       setDemoErr("");
+      return [...prev, vid];
+    });
+  };
+
+  /* ── SAVE WEEKLY VIDEOS ── */
+  const saveWeeklyVideos = async () => {
+    if (selectedWeekly.length === 0) return setWeeklyErr("Please select at least one video.");
+    setSavingWeekly(true); setWeeklyErr("");
+    const t = toast.loading(`Saving ${selectedWeekly.length} video${selectedWeekly.length > 1 ? "s" : ""}...`);
+    try {
+      for (const vid of selectedWeekly) {
+        await addWeeklyApi({ title: vid.video_id, video_id: Number(vid.id) });
+      }
+      setWeeklyModal(false); setSelectedWeekly([]);
+      setVideos([]);
+      setItemUrls({});
+      await loadData();
+      toast.success(`${selectedWeekly.length} video${selectedWeekly.length > 1 ? "s" : ""} added!`, { id: t });
+    } catch (e) {
+      setWeeklyErr(e.response?.data?.message || "Error occurred.");
+      toast.error("Error saving videos", { id: t });
+    } finally { setSavingWeekly(false); }
+  };
+
+  /* ── TOGGLE WEEKLY SELECTION ── */
+  const toggleWeeklySelect = (vid) => {
+    setSelectedWeekly(prev => {
+      const exists = prev.find(v => v.id === vid.id);
+      if (exists) return prev.filter(v => v.id !== vid.id);
+      if (prev.length >= 4) { setWeeklyErr("Maximum 4 videos allowed."); return prev; }
+      setWeeklyErr("");
       return [...prev, vid];
     });
   };
@@ -550,6 +597,146 @@ const HomePageBuilder = () => {
           </div>
         </div>
       )}
+
+      {/* ══ WEEKLY MEETING SECTION ══ */}
+      <div className="hb-section">
+        <div className="hb-section-header">
+          <div className="hb-section-title-wrap">
+            <Film size={16} color="#0891b2" />
+            <h2>Weekly Meeting</h2>
+            <span className="hb-count hb-count--cyan">{weeklyVideos.length} / 4</span>
+          </div>
+          <button className="hb-add-btn hb-add-btn--cyan"
+            onClick={() => { setWeeklyErr(""); setSelectedWeekly([]); setVideos([]); setWeeklyModal(true); loadVideosForPicker(); }}>
+            <Film size={13} /> {weeklyVideos.length === 0 ? "ADD VIDEOS" : "MANAGE VIDEOS"}
+          </button>
+        </div>
+
+        {weeklyVideos.length === 0 ? (
+          <div className="hb-empty">
+            <div className="hb-empty-icon hb-empty-icon--cyan"><Film size={28} color="#67e8f9" /></div>
+            <p className="hb-empty-title">No weekly meeting videos added</p>
+            <p className="hb-empty-sub">Add up to 4 weekly meeting videos for your homepage</p>
+            <button className="hb-add-btn hb-add-btn--cyan" style={{ marginTop: 12 }}
+              onClick={() => { setWeeklyErr(""); setSelectedWeekly([]); setVideos([]); setWeeklyModal(true); loadVideosForPicker(); }}>
+              <Plus size={13} /> ADD VIDEOS
+            </button>
+          </div>
+        ) : (
+          <div className="hb-demo-grid">
+            {weeklyVideos.map((v, i) => (
+              <div className="hb-demo-card" key={i}>
+                <div className="hb-demo-thumb" onClick={() => setActiveDemo(v)}>
+                  {itemUrls[`w_${i}`]
+                    ? <img src={itemUrls[`w_${i}`]} alt={v.title} />
+                    : <div className="hb-img-ph hb-img-ph--dark"><Film size={28} color="#67e8f9" /></div>}
+                  <div className="hb-demo-overlay">
+                    <div className="hb-play-btn hb-play-btn--cyan"><Play size={16} color="white" fill="white" /></div>
+                  </div>
+                  <span className="hb-slot-badge hb-slot-badge--cyan">#{i + 1}</span>
+                </div>
+                <div className="hb-demo-footer">
+                  <p className="hb-demo-title">{v.title}</p>
+                  <p className="hb-demo-vid-id">{v.video_id}</p>
+                </div>
+              </div>
+            ))}
+            {Array.from({ length: 4 - weeklyVideos.length }).map((_, i) => (
+              <div className="hb-demo-card hb-demo-card--empty hb-demo-card--empty-cyan" key={`we_${i}`}
+                onClick={() => { setWeeklyErr(""); setSelectedWeekly([]); setVideos([]); setWeeklyModal(true); loadVideosForPicker(); }}>
+                <div className="hb-demo-thumb hb-demo-thumb--empty-cyan">
+                  <Plus size={24} color="#67e8f9" />
+                  <p>Add Video</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ══ WEEKLY MEETING MULTI-SELECT MODAL ══ */}
+      {weeklyModal && (
+        <div className="modal-overlay" onClick={() => setWeeklyModal(false)}>
+          <div className="hb-demo-select-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="hb-demo-modal-header">
+              <div className="hb-modal-title-wrap">
+                <div className="hb-modal-icon hb-modal-icon--cyan"><Film size={15} color="#0891b2" /></div>
+                <div>
+                  <h3>Select Weekly Meeting Videos</h3>
+                  <p className="hb-modal-sub">Choose up to 4 videos for weekly meetings</p>
+                </div>
+              </div>
+              <button className="hb-modal-close" onClick={() => setWeeklyModal(false)}><X size={15} /></button>
+            </div>
+
+            <div className="hb-select-counter">
+              <div className="hb-select-slots">
+                {[0,1,2,3].map(i => (
+                  <div key={i} className={`hb-select-slot${selectedWeekly[i] ? " hb-select-slot--filled hb-select-slot--cyan" : ""}`}>
+                    {selectedWeekly[i]
+                      ? <><div className="hb-slot-thumb">
+                            {videoThumbUrls[selectedWeekly[i].id]
+                              ? <img src={videoThumbUrls[selectedWeekly[i].id]} alt="" />
+                              : <Film size={12} color="#67e8f9" />}
+                          </div>
+                          <span>{selectedWeekly[i].video_id}</span>
+                          <button className="hb-slot-remove hb-slot-remove--cyan" onClick={() => toggleWeeklySelect(selectedWeekly[i])}>
+                            <X size={10} />
+                          </button></>
+                      : <><div className="hb-slot-empty-icon"><Plus size={14} color="#67e8f9" /></div>
+                          <span>Slot {i + 1}</span></>}
+                  </div>
+                ))}
+              </div>
+              <span className="hb-select-count-badge hb-select-count-badge--cyan">{selectedWeekly.length}/4 selected</span>
+            </div>
+
+            {weeklyErr && <p className="hb-form-err" style={{ margin: "0 0 4px" }}>{weeklyErr}</p>}
+
+            {loadingVids ? (
+              <div className="hb-picker-loading"><div className="loader-spinner" style={{ width: 28, height: 28, borderWidth: 3 }} /><p>Loading videos...</p></div>
+            ) : (
+              <div className="hb-demo-picker-grid">
+                {videos.map(v => {
+                  const isSelected  = selectedWeekly.find(s => s.id === v.id);
+                  const selIndex    = selectedWeekly.findIndex(s => s.id === v.id);
+                  const isCompleted = v.media_url && v.media_url.includes("master.m3u8");
+                  return (
+                    <div key={v.id}
+                      className={`hb-demo-picker-card${isSelected ? " hb-demo-picker-card--sel hb-demo-picker-card--sel-cyan" : ""}${!isCompleted ? " hb-demo-picker-card--pending" : ""}`}
+                      onClick={() => isCompleted && toggleWeeklySelect(v)}>
+                      <div className="hb-demo-picker-thumb">
+                        {videoThumbUrls[v.id]
+                          ? <img src={videoThumbUrls[v.id]} alt={v.video_id} />
+                          : <div className="hb-picker-ph hb-picker-ph--video"><Film size={18} color="#67e8f9" /></div>}
+                        {isSelected && <div className="hb-demo-picker-sel-badge hb-demo-picker-sel-badge--cyan">{selIndex + 1}</div>}
+                        {!isCompleted && <div className="hb-demo-picker-pending">Pending</div>}
+                      </div>
+                      <div className="hb-demo-picker-info">
+                        <p className="hb-demo-picker-id">{v.video_id}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {videos.length === 0 && <p className="hb-picker-empty" style={{ gridColumn: "span 4" }}>No videos in Media Library.</p>}
+              </div>
+            )}
+
+            <div className="hb-demo-modal-footer">
+              <span className="hb-demo-footer-hint">Click videos to select · Click again to deselect</span>
+              <div style={{ display:"flex", gap:10 }}>
+                <button className="hb-cancel-btn" onClick={() => setWeeklyModal(false)}>Cancel</button>
+                <button className="hb-save-btn hb-save-btn--cyan" onClick={saveWeeklyVideos}
+                  disabled={savingWeekly || selectedWeekly.length === 0}>
+                  {savingWeekly ? "Saving..." : `Add ${selectedWeekly.length} Video${selectedWeekly.length !== 1 ? "s" : ""}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
 
       {/* ══ IMAGE PICKER ══ */}
       {imgPickerOpen && (
