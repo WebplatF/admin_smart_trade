@@ -457,7 +457,7 @@ const MediaLibrary = () => {
             <input id="_vid" type="file" accept="video/*,.zip,application/zip" style={{ display: "none" }}
               onChange={(e) => { setVideoFile(e.target.files[0]); setVidDone(false); }} />
             <CloudUpload size={36} color="#2f4fd5" strokeWidth={1.4} />
-            <p className="dz-text">{videoFile ? videoFile.name : "Click or drag to upload .zip or video"}</p>
+            <p className="dz-text">{videoFile ? videoFile.name : "Click or drag to upload .zip"}</p>
             {(vidUploading || vidProgress > 0) && (
               <div className="prog-wrap">
                 <div className="prog-bar"><div style={{ width: `${vidProgress}%` }} /></div>

@@ -58,7 +58,7 @@ const SubscriptionRequests = () => {
 
       await axiosClient.post("/admin/subscription/action", {
         subscrption_id: selectedId,
-        action: confirmType === "approve" ? "Approved" : "Rejected"
+        action: confirmType === "approve" ? "approved" : "rejected"
       });
 
       toast.success(

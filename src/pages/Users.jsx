@@ -174,7 +174,7 @@ const Users = () => {
 
             <th>Phone Number</th>
             <th>Email</th>
-            <th>IP</th>
+            <th>Device Id</th>
             <th>Status</th>
           </tr>
         </thead>
