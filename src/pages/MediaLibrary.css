@@ -31,6 +31,12 @@
   padding: 22px 24px;
   box-shadow: 0 1px 8px rgba(0,0,0,0.07);
 }
+.ml-card--list {
+  height: 450px;
+   display: flex;
+  flex-direction: column;
+}
+
 
 /* ── CARD HEAD ── */
 .card-head {
@@ -57,9 +63,18 @@
 }
 
 /* ── TABLE ── */
+.tbl-scroll {
+  flex: 1;
+   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 .tbl { width: 100%; border-collapse: collapse; }
-.tbl thead tr { background: #2f4fd5; }
+.tbl thead tr { background: #2f4fd5; position: sticky;
+  top: 0;
+  z-index: 2; }
 .tbl th {
+  
   color: white; font-weight: 600;
   padding: 10px 12px; font-size: 12px;
   text-align: left; white-space: nowrap;
@@ -401,4 +416,80 @@
 .tbl-empty-inner p {
   font-size: 13px; color: #bbb;
   font-weight: 500; margin: 0;
+}
+/* ── PAGINATION ── */
+.pagination {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0 0;
+  margin-top: 12px;
+  border-top: 1px solid #ececec;
+}
+
+.page-btn {
+  display: flex;
+  align-items: center;
+  width: auto;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1.5px solid #dde5ff;
+  border-radius: 8px;
+  background: white;
+  color: #2f4fd5;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.page-btn:hover:not(:disabled) {
+  background: #eef1ff;
+  border-color: #2f4fd5;
+}
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-number {
+  min-width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border: 1.5px solid transparent;
+  user-select: none;
+  padding: 0 4px;
+}
+.page-number:hover:not(.ellipsis):not(.active) {
+  background: #eef1ff;
+  color: #2f4fd5;
+  border-color: #dde5ff;
+}
+.page-number.active {
+  background: #2f4fd5;
+  color: white;
+  border-color: #2f4fd5;
+  cursor: default;
+}
+.page-number.ellipsis {
+  cursor: default;
+  color: #aaa;
+  border-color: transparent;
 }

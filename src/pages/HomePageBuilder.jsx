@@ -4,6 +4,7 @@ import { Image as ImageIcon, X, Plus, Film, Layout, Monitor, Smartphone, Play } 
 import axiosClient from "../api/axiosClient";
 import { getImages, getVideos, getWasabiFile } from "../api/mediaService";
 import toast from "react-hot-toast";
+import Pagination from "../components/Pagination";
 
 /* ── API ── */
 const getHomeBuilder = ()     => axiosClient.get("/admin/home_builder");
@@ -27,6 +28,7 @@ const HomePageBuilder = () => {
   const [bannerTitle, setBannerTitle]   = useState("");
   const [savingBanner, setSavingBanner] = useState(false);
   const [bannerErr, setBannerErr]       = useState("");
+  
 
   /* ── DEMO VIDEO MULTI-SELECT ── */
   const [demoModal, setDemoModal]       = useState(false);
@@ -51,7 +53,10 @@ const HomePageBuilder = () => {
   const [videos, setVideos]                 = useState([]);
   const [videoThumbUrls, setVideoThumbUrls] = useState({});
   const [loadingVids, setLoadingVids]       = useState(false);
-
+   const [currentPage, setCurrentPage]   = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [videoPage, setVideoPage]               = useState(1);
+  const [videoTotalRecords, setVideoTotalRecords] = useState(0);
   /* ── HLS PLAYER ── */
   const [activeDemo, setActiveDemo] = useState(null); // demo video to preview
 
@@ -127,10 +132,10 @@ const HomePageBuilder = () => {
     try {
       const res = await getHomeBuilder();
       if (res.data.status) {
-        const raw        = res.data.data;
-        const bannerList = raw?.banner       || [];
-        const demoList    = raw?.demo_videos    || [];
-        const weeklyList  = raw?.weekly_meeting || [];
+        const raw        = res.data.data || {};
+        const bannerList = Array.isArray(raw?.banner) ? raw.banner : [];
+        const demoList    = Array.isArray(raw?.demo_videos) ? raw.demo_videos : [];
+        const weeklyList  = Array.isArray(raw?.weekly_meeting) ? raw.weekly_meeting : [];
 
         // Latest 4 of each
         const latestDemos  = demoList.slice(-4);
@@ -181,14 +186,16 @@ const HomePageBuilder = () => {
   useEffect(() => { loadData(); }, []); // eslint-disable-line
 
   /* ── LOAD IMAGES ── */
-  const loadImages = async () => {
-    if (images.length > 0) return;
+  const loadImages = async (page=1) => {
+   
     setLoadingImgs(true);
     try {
-      const res = await getImages();
+      const res = await getImages(page);
       if (res.data.status) {
-        const data = res.data.data;
+        const data = Array.isArray(res.data.data?.dataList) ? res.data.data.dataList : [];
         setImages(data);
+        setCurrentPage(page);                                      // ← track current page
+      setTotalRecords(res.data.data?.totalRecords ?? 0); 
         const map = {};
         await Promise.all(data.map(async (img) => {
           try { const r = await getWasabiFile(img.media_url); map[img.id] = r?.data?.data?.wasabi_url ?? null; }
@@ -201,13 +208,15 @@ const HomePageBuilder = () => {
   };
 
   /* ── LOAD VIDEOS FOR PICKER ── */
-  const loadVideosForPicker = async () => {
+  const loadVideosForPicker = async (page=1) => {
     setLoadingVids(true);
     try {
-      const res = await getVideos();
+      const res = await getVideos(page);
       if (res.data.status) {
-        const data = res.data.data;
+        const data = Array.isArray(res.data.data?.dataList) ? res.data.data.dataList : [];
         setVideos(data);
+         setVideoPage(page);                                  
+      setVideoTotalRecords(res.data.data?.totalRecords ?? 0);
         const map = {};
         await Promise.all(data.map(async (v) => {
           if (!v.thumbnail) { map[v.id] = null; return; }
@@ -219,6 +228,13 @@ const HomePageBuilder = () => {
     } catch (e) { console.error(e); }
     finally { setLoadingVids(false); }
   };
+  const ITEMS_PER_PAGE =10;
+  const VIDEO_ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
+const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
+
+
+
 
   /* ── SAVE BANNER ── */
   const saveBanner = async () => {
@@ -583,7 +599,16 @@ const HomePageBuilder = () => {
                 {videos.length === 0 && <p className="hb-picker-empty" style={{ gridColumn: "span 4" }}>No videos in Media Library.</p>}
               </div>
             )}
-
+ {videoTotalPages > 1 && (
+      <Pagination
+        currentPage={videoPage}
+        totalPages={videoTotalPages}
+        onPageChange={(newPage) => {
+          setVideoThumbUrls({});       // ← clear stale thumbnails
+          loadVideosForPicker(newPage);
+        }}
+      />
+    )}
             <div className="hb-demo-modal-footer">
               <span className="hb-demo-footer-hint">Click videos to select · Click again to deselect</span>
               <div style={{ display:"flex", gap:10 }}>
@@ -761,6 +786,16 @@ const HomePageBuilder = () => {
                 {images.length === 0 && <p className="hb-picker-empty">No images in Media Library.</p>}
               </div>
             )}
+{totalPages > 1 && (
+  <Pagination
+    currentPage={currentPage}
+    totalPages={totalPages}
+    onPageChange={(newPage) => {
+      setImageUrls({});        // ← clear stale thumbnails
+      loadImages(newPage);
+    }}
+  />
+)}
           </div>
         </div>
       )}

@@ -4,16 +4,22 @@ import { useEffect, useState, useRef } from "react";
 import {
   Image, X, Eye, Search,
   CloudUpload, Film, Play, ExternalLink, Clock,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import {
   getImages, getWasabiFile, uploadImage, updateImageStatus,
   getVideos, updateVideoStatus, uploadVideoChunked, makeUploadId,
 } from "../api/mediaService";
+import Pagination from "../components/Pagination";
 
 const MediaLibrary = () => {
 
   /* ── IMAGE STATE ── */
   const [images, setImages]             = useState([]);
+  const [currentPage, setCurrentPage]   = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [videoPage, setVideoPage]               = useState(1);
+const [videoTotalRecords, setVideoTotalRecords] = useState(0);
   const [imageUrls, setImageUrls]       = useState({});
   const [title, setTitle]               = useState("");
   const [file, setFile]                 = useState(null);
@@ -32,7 +38,7 @@ const MediaLibrary = () => {
   const [vidStatusText, setVidStatusText] = useState("");
 
   /* ── PENDING VIDEOS (optimistic list before server processes) ── */
-  const [pendingVids, setPendingVids] = useState([]); // [{ uploadId, title }]
+  const [pendingVids, setPendingVids] = useState([]);
 
   const [loadingMedia, setLoadingMedia] = useState(false);
 
@@ -45,28 +51,50 @@ const MediaLibrary = () => {
   const [vidPreviewData, setVidPreviewData] = useState(null);
   const videoRef = useRef(null);
 
-  /* ── LOAD ── */
-  const loadImages = async () => {
+  /* ── PAGINATION CONFIG ── */
+  const ITEMS_PER_PAGE = 10; // Adjust based on your backend
+
+  /* ── LOAD IMAGES WITH PAGINATION ── */
+  const loadImages = async (page = 1) => {
     try {
-      const res = await getImages();
+      setLoadingMedia(true);
+      const res = await getImages(page);
+
       if (res.data.status) {
-        const data = res.data.data;
-        setImages(data);
+        const list = res.data.data.dataList || [];
+
+        setImages(list);
+        setCurrentPage(res.data.data.currentPage);
+        setTotalRecords(res.data.data.totalRecords);
+
         const map = {};
-        await Promise.all(data.map(async (img) => {
-          try { const r = await getWasabiFile(img.media_url); map[img.id] = r?.data?.data?.wasabi_url; }
-          catch { map[img.id] = null; }
-        }));
+
+        await Promise.all(
+          list.map(async (img) => {
+            try {
+              const r = await getWasabiFile(img.media_url);
+              map[img.id] = r?.data?.data?.wasabi_url;
+            } catch {
+              map[img.id] = null;
+            }
+          })
+        );
+
         setImageUrls(map);
       }
-    } catch (e) { console.error(e); toast.error("Failed to load images"); }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to load images");
+    } finally {
+      setLoadingMedia(false);
+    }
   };
 
-  const loadVideos = async () => {
+  const loadVideos = async (page=1) => {
     try {
-      const res = await getVideos();
+      const res = await getVideos(page);
       if (!res.data.status) return;
-      const data = res.data.data;
+      const data = res.data.data.dataList || [];
       const map = {};
       await Promise.all(data.map(async (vid) => {
         if (!vid.thumbnail) { map[vid.id] = null; return; }
@@ -75,7 +103,9 @@ const MediaLibrary = () => {
       }));
       setVideos([...data]);
       setVideoUrls({ ...map });
-
+      setVideoPage(res.data.data.currentPage);
+    setTotalRecords(res.data.data.totalRecords); 
+      
       // Remove from pending if now completed
       setPendingVids(prev => prev.filter(p => {
         const found = data.find(v => v.video_id === p.uploadId);
@@ -87,12 +117,19 @@ const MediaLibrary = () => {
   useEffect(() => {
     const init = async () => {
       setLoadingMedia(true);
-      await Promise.all([loadImages(), loadVideos()]);
+      await Promise.all([loadImages(1), loadVideos()]);
       setLoadingMedia(false);
     };
     init();
   }, []); // eslint-disable-line
 
+  /* ── PAGINATION HELPERS ── */
+
+
+  
+  const VIDEO_ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
+const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
   /* ── HLS VIDEO PREVIEW ── */
   useEffect(() => {
     if (!vidPreviewOpen || !vidPreviewData?.wasabiUrl || !vidPreviewData?.mediaUrl) return;
@@ -163,7 +200,9 @@ const MediaLibrary = () => {
     const t = toast.loading("Uploading image...");
     try {
       await uploadImage(fd, (pct) => setImgProgress(pct));
-      setImgDone(true); loadImages();
+      setImgDone(true);
+      // Reload first page after upload
+      await loadImages(1);
       toast.success("Image uploaded!", { id: t });
       setTimeout(() => { setImgDone(false); setFile(null); setTitle(""); setImgProgress(0); }, 1500);
     } catch (e) { console.error(e); toast.error("Image upload failed", { id: t }); }
@@ -243,7 +282,9 @@ const MediaLibrary = () => {
     setImages(prev => prev.map(i => i.id === img.id ? { ...i, status: newStatus } : i));
     const t = toast.loading("Updating...");
     try {
-      await updateImageStatus(img.id, newStatus); loadImages();
+      await updateImageStatus(img.id, newStatus);
+      // Reload current page to refresh
+      await loadImages(currentPage);
       toast.success("Status updated", { id: t });
     } catch (e) {
       setImages(prev => prev.map(i => i.id === img.id ? { ...i, status: img.status } : i));
@@ -265,7 +306,7 @@ const MediaLibrary = () => {
     return sec > 0 ? `${m}m ${sec}s` : `${m} min`;
   };
 
-  const totalFiles = images.length + videos.length;
+  const totalFiles = totalRecords + videos.length;
   const imgRows = images;
 
   // Merge pending + real videos
@@ -274,6 +315,8 @@ const MediaLibrary = () => {
     .filter(p => !realVideoIds.has(p.uploadId))
     .map(p => ({ _pending: true, video_id: p.uploadId, title: p.title, id: p.uploadId }));
   const finalVidRows = [...pendingRows, ...videos];
+
+ 
 
   return (
     <div className="media-page">
@@ -288,189 +331,356 @@ const MediaLibrary = () => {
       <div className="media-header">
         <div>
           <h1 className="page-title">Media Library</h1>
-          <p className="page-sub">{totalFiles} files — {images.length} images, {videos.length} videos</p>
+          <p className="page-sub">
+            {totalFiles} files — {totalRecords} images, {videos.length} videos
+            {totalPages > 1 && ` · Page ${currentPage} of ${totalPages}`}
+          </p>
         </div>
       </div>
 
       <div className="ml-grid">
 
         {/* CARD 1 — Images List */}
-        <div className="ml-card">
+        <div className="ml-card ml-card--list">
           <div className="card-head">
             <Image size={16} className="card-head-icon" />
             <p className="card-title">Images List</p>
-            <span className="card-count">{images.length}</span>
+            <span className="card-count">{totalRecords}</span>
           </div>
-          <table className="tbl">
-            <thead><tr>
-              <th className="col-prev">Preview</th>
-              <th>Title</th>
-              <th className="col-date">Updated</th>
-              <th className="col-status">Status</th>
-            </tr></thead>
-            <tbody>
-              {imgRows.length === 0 ? (
-                <tr><td colSpan="4" className="tbl-empty">
-                  <div className="tbl-empty-inner">
-                    <Image size={28} color="#dde3f0" />
-                    <p>No images uploaded yet</p>
-                  </div>
-                </td></tr>
-              ) : imgRows.map((img) => (
-                <tr key={img.id}>
-                  <td>
-                    <div className="thumb-wrap" onClick={() => imageUrls[img.id] && (setPreviewData({ src: imageUrls[img.id], title: img.title }), setPreviewOpen(true))}>
-                      <img className="row-thumb" src={imageUrls[img.id] || "/no-image.png"} alt={img.title} />
-                      {imageUrls[img.id] && <div className="thumb-overlay"><Eye size={14} color="white" /></div>}
-                    </div>
-                  </td>
-                  <td className="td-title">{img.title}</td>
-                  <td className="td-sm">{fmtDate(img.updated_at)}</td>
-                  <td>
-                    <label className="toggle">
-                      <input type="checkbox" checked={!img.status} onChange={() => toggleImgStatus(img)} />
-                      <span className="tog-track" />
-                    </label>
-                  </td>
+          <div className="tbl-scroll">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th className="col-prev">Preview</th>
+                  <th>Title</th>
+                  <th className="col-date">Updated</th>
+                  <th className="col-status">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {imgRows.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="tbl-empty">
+                      <div className="tbl-empty-inner">
+                        <Image size={28} color="#dde3f0" />
+                        <p>No images uploaded yet</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  imgRows.map((img) => (
+                    <tr key={img.id}>
+                      <td>
+                        <div
+                          className="thumb-wrap"
+                          onClick={() =>
+                            imageUrls[img.id] &&
+                            (setPreviewData({ src: imageUrls[img.id], title: img.title }),
+                            setPreviewOpen(true))
+                          }
+                        >
+                          <img className="row-thumb" src={imageUrls[img.id] || "/no-image.png"} alt={img.title} />
+                          {imageUrls[img.id] && (
+                            <div className="thumb-overlay">
+                              <Eye size={14} color="white" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="td-title">{img.title}</td>
+                      <td className="td-sm">{fmtDate(img.updated_at)}</td>
+                      <td>
+                        <label className="toggle">
+                          <input
+                            type="checkbox"
+                            checked={!img.status}
+                            onChange={() => toggleImgStatus(img)}
+                          />
+                          <span className="tog-track" />
+                        </label>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* PAGINATION — IMAGES */}
+         {/* PAGINATION — IMAGES */}
+{totalPages > 1 && (
+  <Pagination
+    currentPage={currentPage}
+    totalPages={totalPages}
+    onPageChange={(newPage) => {
+      loadImages(newPage);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }}
+  />
+)}
+        </div> 
 
         {/* CARD 2 — Image Upload */}
         <div className="ml-card">
-          <div className="card-head"><CloudUpload size={16} className="card-head-icon" /><p className="card-title">Upload Image</p></div>
+          <div className="card-head">
+            <CloudUpload size={16} className="card-head-icon" />
+            <p className="card-title">Upload Image</p>
+          </div>
           <p className="form-lbl">Image Title</p>
-          <input className="f-input" placeholder="Type your title here...." value={title}
-            onChange={(e) => { setTitle(e.target.value); setImgDone(false); }} />
-          <div className="drop-zone" onClick={() => document.getElementById("_img").click()}
+          <input
+            className="f-input"
+            placeholder="Type your title here...."
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setImgDone(false);
+            }}
+          />
+          <div
+            className="drop-zone"
+            onClick={() => document.getElementById("_img").click()}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) { setFile(f); setImgDone(false); } }}>
-            <input id="_img" type="file" accept="image/*" style={{ display: "none" }}
-              onChange={(e) => { setFile(e.target.files[0]); setImgDone(false); }} />
+            onDrop={(e) => {
+              e.preventDefault();
+              const f = e.dataTransfer.files[0];
+              if (f) {
+                setFile(f);
+                setImgDone(false);
+              }
+            }}
+          >
+            <input
+              id="_img"
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                setFile(e.target.files[0]);
+                setImgDone(false);
+              }}
+            />
             <CloudUpload size={36} color="#2f4fd5" strokeWidth={1.4} />
-            <p className="dz-text">{file ? file.name : "Click or drag to upload an image"}</p>
+            <p className="dz-text">
+              {file ? file.name : "Click or drag to upload an image"}
+            </p>
             <span className="dz-hint">PNG, JPG, up to 5MB</span>
             {(imgUploading || imgProgress > 0) && (
               <div className="prog-wrap">
-                <div className="prog-bar"><div style={{ width: `${imgProgress}%` }} /></div>
-                <div className="prog-labels"><span>{imgProgress}%</span><span>100%</span></div>
+                <div className="prog-bar">
+                  <div style={{ width: `${imgProgress}%` }} />
+                </div>
+                <div className="prog-labels">
+                  <span>{imgProgress}%</span>
+                  <span>100%</span>
+                </div>
               </div>
             )}
           </div>
-          <button className={`up-btn${imgDone ? " up-btn--done" : ""}`} onClick={handleUploadImage} disabled={imgUploading}>
+          <button
+            className={`up-btn${imgDone ? " up-btn--done" : ""}`}
+            onClick={handleUploadImage}
+            disabled={imgUploading}
+          >
             {imgDone ? "✓ Completed" : imgUploading ? `Uploading ${imgProgress}%` : "Upload"}
           </button>
         </div>
 
         {/* CARD 3 — Video List */}
-        <div className="ml-card">
+        <div className="ml-card  ml-card--list">
           <div className="card-head">
             <Film size={16} className="card-head-icon" />
             <p className="card-title">Video List</p>
             <span className="card-count">{videos.length + pendingVids.length}</span>
           </div>
-          <table className="tbl">
-            <thead><tr>
-              <th className="col-prev">Preview</th>
-              <th>Title</th>
-              <th className="col-dur">Duration</th>
-              <th className="col-status">Status</th>
-            </tr></thead>
-            <tbody>
-              {finalVidRows.length === 0 ? (
-                <tr><td colSpan="4" className="tbl-empty">
-                  <div className="tbl-empty-inner">
-                    <Film size={28} color="#dde3f0" />
-                    <p>No videos uploaded yet</p>
-                  </div>
-                </td></tr>
-              ) : finalVidRows.map((vid, i) => {
-                const isPending = !!vid._pending;
-                const isCompleted = !isPending && vid.media_url?.includes("master.m3u8");
-                return (
-                  <tr key={vid._pending ? `p_${vid.id}` : vid.id}>
-                    <td>
-                      {isPending ? (
-                        /* Pending: show pulsing placeholder */
-                        <div className="row-thumb row-thumb--pending">
-                          <div className="pending-thumb-inner" />
-                        </div>
-                      ) : (
-                        <div className="thumb-wrap vid-thumb-wrap" onClick={async () => {
-                          if (vid._mock || !vid.media_url) return;
-                          try {
-                            const r = await getWasabiFile(vid.media_url);
-                            setVidPreviewData({ title: vid.video_id, wasabiUrl: r?.data?.data?.wasabi_url || null, mediaUrl: vid.media_url });
-                          } catch { setVidPreviewData({ title: vid.video_id, wasabiUrl: null, mediaUrl: vid.media_url }); }
-                          setVidPreviewOpen(true);
-                        }}>
-                          {!vid._mock && videoUrls[vid.id]
-                            ? <img className="row-thumb" src={videoUrls[vid.id]} alt={vid.video_id} />
-                            : <div className="row-thumb row-thumb--ph" />}
-                          {!vid._mock && <div className="thumb-overlay"><div className="vid-play-btn"><Play size={10} color="white" fill="white" /></div></div>}
-                        </div>
-                      )}
-                    </td>
-                    <td className="td-title">
-                      {isPending ? vid.title : (vid.video_id || "—")}
-                    </td>
-                    <td className="td-sm td-dur">
-                      {isPending || vid._mock ? "—" : <><Clock size={11} style={{ marginRight: 4, verticalAlign: "middle" }} />{fmtDuration(vid.duration)}</>}
-                    </td>
-                    <td>
-                      {isPending ? (
-                        <span className="status-pill pill--pending">
-                          Pending
-                        </span>
-                      ) : (
-                        <span className={`status-pill ${isCompleted ? "pill--completed" : "pill--pending"}`}>
-                          {isCompleted ? "Completed" : "Pending"}
-                        </span>
-                      )}
+          <div className="tbl-scroll">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th className="col-prev">Preview</th>
+                  <th>Title</th>
+                  <th className="col-dur">Duration</th>
+                  <th className="col-status">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {finalVidRows.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="tbl-empty">
+                      <div className="tbl-empty-inner">
+                        <Film size={28} color="#dde3f0" />
+                        <p>No videos uploaded yet</p>
+                      </div>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : (
+                  finalVidRows.map((vid, i) => {
+                    const isPending = !!vid._pending;
+                    const isCompleted = !isPending && vid.media_url?.includes("master.m3u8");
+                    return (
+                      <tr key={vid._pending ? `p_${vid.id}` : vid.id}>
+                        <td>
+                          {isPending ? (
+                            /* Pending: show pulsing placeholder */
+                            <div className="row-thumb row-thumb--pending">
+                              <div className="pending-thumb-inner" />
+                            </div>
+                          ) : (
+                            <div
+                              className="thumb-wrap vid-thumb-wrap"
+                              onClick={async () => {
+                                if (vid._mock || !vid.media_url) return;
+                                try {
+                                  const r = await getWasabiFile(vid.media_url);
+                                  setVidPreviewData({
+                                    title: vid.video_id,
+                                    wasabiUrl: r?.data?.data?.wasabi_url || null,
+                                    mediaUrl: vid.media_url,
+                                  });
+                                } catch {
+                                  setVidPreviewData({
+                                    title: vid.video_id,
+                                    wasabiUrl: null,
+                                    mediaUrl: vid.media_url,
+                                  });
+                                }
+                                setVidPreviewOpen(true);
+                              }}
+                            >
+                              {!vid._mock && videoUrls[vid.id] ? (
+                                <img className="row-thumb" src={videoUrls[vid.id]} alt={vid.video_id} />
+                              ) : (
+                                <div className="row-thumb row-thumb--ph" />
+                              )}
+                              {!vid._mock && (
+                                <div className="thumb-overlay">
+                                  <div className="vid-play-btn">
+                                    <Play size={10} color="white" fill="white" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="td-title">
+                          {isPending ? vid.title : vid.video_id || "—"}
+                        </td>
+                        <td className="td-sm td-dur">
+                          {isPending || vid._mock ? (
+                            "—"
+                          ) : (
+                            <>
+                              <Clock size={11} style={{ marginRight: 4, verticalAlign: "middle" }} />
+                              {fmtDuration(vid.duration)}
+                            </>
+                          )}
+                        </td>
+                        <td>
+                          {isPending ? (
+                            <span className="status-pill pill--pending">Pending</span>
+                          ) : (
+                            <span className={`status-pill ${isCompleted ? "pill--completed" : "pill--pending"}`}>
+                              {isCompleted ? "Completed" : "Pending"}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+{/* PAGINATION — VIDEOS */}
+{videoTotalPages > 1 && (
+  <Pagination
+    currentPage={videoPage}
+    totalPages={videoTotalPages}
+    onPageChange={(newPage) => {
+      loadVideos(newPage);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }}
+  />
+)}
         </div>
 
         {/* CARD 4 — Video Upload */}
         <div className="ml-card">
-          <div className="card-head"><CloudUpload size={16} className="card-head-icon" /><p className="card-title">Upload Video</p></div>
+          <div className="card-head">
+            <CloudUpload size={16} className="card-head-icon" />
+            <p className="card-title">Upload Video</p>
+          </div>
           <div className="thumb-row">
-            <input className="f-input thumb-txt" placeholder="Select thumbnail"
-              value={selectedThumb?.title || ""} readOnly onClick={() => setThumbOpen(true)} />
-            <button className="thumb-icon-btn" onClick={() => setThumbOpen(true)}><Search size={15} color="#666" /></button>
+            <input
+              className="f-input thumb-txt"
+              placeholder="Select thumbnail"
+              value={selectedThumb?.title || ""}
+              readOnly
+              onClick={() => setThumbOpen(true)}
+            />
+            <button className="thumb-icon-btn" onClick={() => setThumbOpen(true)}>
+              <Search size={15} color="#666" />
+            </button>
           </div>
           <p className="form-lbl">Video Title</p>
-          <input className="f-input" placeholder="Type your title here...."
+          <input
+            className="f-input"
+            placeholder="Type your title here...."
             value={videoTitle}
-            onChange={(e) => { setVideoTitle(e.target.value); setVidDone(false); }}
+            onChange={(e) => {
+              setVideoTitle(e.target.value);
+              setVidDone(false);
+            }}
             onKeyDown={(e) => e.key === "Enter" && !vidUploading && handleUploadVideo()}
           />
-          <div className="drop-zone" onClick={() => document.getElementById("_vid").click()}
+          <div
+            className="drop-zone"
+            onClick={() => document.getElementById("_vid").click()}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) { setVideoFile(f); setVidDone(false); } }}>
-            <input id="_vid" type="file" accept="video/*,.zip,application/zip" style={{ display: "none" }}
-              onChange={(e) => { setVideoFile(e.target.files[0]); setVidDone(false); }} />
+            onDrop={(e) => {
+              e.preventDefault();
+              const f = e.dataTransfer.files[0];
+              if (f) {
+                setVideoFile(f);
+                setVidDone(false);
+              }
+            }}
+          >
+            <input
+              id="_vid"
+              type="file"
+              accept="video/*,.zip,application/zip"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                setVideoFile(e.target.files[0]);
+                setVidDone(false);
+              }}
+            />
             <CloudUpload size={36} color="#2f4fd5" strokeWidth={1.4} />
-            <p className="dz-text">{videoFile ? videoFile.name : "Click or drag to upload .zip or video"}</p>
+            <p className="dz-text">
+              {videoFile ? videoFile.name : "Click or drag to upload .zip or video"}
+            </p>
             {(vidUploading || vidProgress > 0) && (
               <div className="prog-wrap">
-                <div className="prog-bar"><div style={{ width: `${vidProgress}%` }} /></div>
-                <div className="prog-labels"><span>{vidProgress}%</span><span>100%</span></div>
+                <div className="prog-bar">
+                  <div style={{ width: `${vidProgress}%` }} />
+                </div>
+                <div className="prog-labels">
+                  <span>{vidProgress}%</span>
+                  <span>100%</span>
+                </div>
               </div>
             )}
           </div>
           {vidUploading && vidStatusText && <p className="vid-status-text">{vidStatusText}</p>}
-          <button className={`up-btn${vidDone ? " up-btn--done" : ""}`} onClick={handleUploadVideo} disabled={vidUploading}>
+          <button
+            className={`up-btn${vidDone ? " up-btn--done" : ""}`}
+            onClick={handleUploadVideo}
+            disabled={vidUploading}
+          >
             {vidDone ? "✓ Uploaded" : vidUploading ? `Uploading ${vidProgress}%` : "Upload"}
           </button>
         </div>
-
       </div>
 
       {/* THUMBNAIL PICKER */}
@@ -479,14 +689,36 @@ const MediaLibrary = () => {
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-hdr">
               <span className="modal-title">Select Thumbnail</span>
-              <button className="modal-close-btn" onClick={() => setThumbOpen(false)}><X size={15} /></button>
+              <button className="modal-close-btn" onClick={() => setThumbOpen(false)}>
+                <X size={15} />
+              </button>
             </div>
             <div className="thumb-grid">
-              {(images.length > 0 ? images : Array(6).fill(null).map((_, i) => ({ id: i, title: "Sample Image", _mock: true }))).map((img, i) => (
-                <div key={img._mock ? i : img.id} className={`t-item${selectedThumb?.id === img.id ? " t-item--sel" : ""}`}
-                  onClick={() => { if (!img._mock) { setSelectedThumb({ id: img.id, title: img.title }); setThumbOpen(false); } }}>
+              {(images.length > 0
+                ? images
+                : Array(6)
+                    .fill(null)
+                    .map((_, i) => ({ id: i, title: "Sample Image", _mock: true }))
+              ).map((img, i) => (
+                <div
+                  key={img._mock ? i : img.id}
+                  className={`t-item${selectedThumb?.id === img.id ? " t-item--sel" : ""}`}
+                  onClick={() => {
+                    if (!img._mock) {
+                      setSelectedThumb({ id: img.id, title: img.title });
+                      setThumbOpen(false);
+                    }
+                  }}
+                >
                   <div className="t-img">
-                    {!img._mock && imageUrls[img.id] ? <img src={imageUrls[img.id]} alt={img.title} /> : <><Eye size={13} color="#aaa" /><span>Preview</span></>}
+                    {!img._mock && imageUrls[img.id] ? (
+                      <img src={imageUrls[img.id]} alt={img.title} />
+                    ) : (
+                      <>
+                        <Eye size={13} color="#aaa" />
+                        <span>Preview</span>
+                      </>
+                    )}
                   </div>
                   <p>{img.title}</p>
                 </div>
@@ -502,13 +734,19 @@ const MediaLibrary = () => {
           <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="preview-topbar">
               <div className="preview-title-wrap">
-                <div className="preview-type-icon"><Film size={15} color="#2f4fd5" /></div>
+                <div className="preview-type-icon">
+                  <Film size={15} color="#2f4fd5" />
+                </div>
                 <span className="preview-title">{vidPreviewData.title}</span>
               </div>
-              <button className="preview-close-btn" onClick={() => setVidPreviewOpen(false)}><X size={15} /></button>
+              <button className="preview-close-btn" onClick={() => setVidPreviewOpen(false)}>
+                <X size={15} />
+              </button>
             </div>
             <div className="preview-vid-wrap">
-              <video ref={videoRef} className="preview-video" controls>Your browser does not support the video tag.</video>
+              <video ref={videoRef} className="preview-video" controls>
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>
@@ -520,22 +758,29 @@ const MediaLibrary = () => {
           <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
             <div className="preview-topbar">
               <div className="preview-title-wrap">
-                <div className="preview-type-icon"><Image size={15} color="#2f4fd5" /></div>
+                <div className="preview-type-icon">
+                  <Image size={15} color="#2f4fd5" />
+                </div>
                 <span className="preview-title">{previewData.title}</span>
               </div>
-              <button className="preview-close-btn" onClick={() => setPreviewOpen(false)}><X size={15} /></button>
+              <button className="preview-close-btn" onClick={() => setPreviewOpen(false)}>
+                <X size={15} />
+              </button>
             </div>
             <div className="preview-img-wrap">
               <img src={previewData.src} alt={previewData.title} className="preview-img" />
             </div>
             <div className="preview-footer">
-              <span className="preview-badge"><Eye size={10} /> IMAGE</span>
-              <a href={previewData.src} target="_blank" rel="noreferrer" className="preview-link"><ExternalLink size={12} /> Open Original</a>
+              <span className="preview-badge">
+                <Eye size={10} /> IMAGE
+              </span>
+              <a href={previewData.src} target="_blank" rel="noreferrer" className="preview-link">
+                <ExternalLink size={12} /> Open Original
+              </a>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

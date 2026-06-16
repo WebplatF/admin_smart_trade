@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: "https://webplatf.site/api",
+  baseURL: "https://api.smarttradeind.com/api",
   timeout: 120000, // 2 minutes
   headers: {
     apikey: "uB0cD4oO2VmUzexweYg2Gc2FJY7GHVdGehDrbald4j4="
