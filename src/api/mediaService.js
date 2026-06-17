@@ -5,8 +5,8 @@ import axiosClient from "./axiosClient";
 ───────────────────────────────────────── */
 
 /* GET IMAGES LIST */
-export const getImages = () => {
-  return axiosClient.get("/admin/image_list");
+export const getImages = (page = 1) => {
+  return axiosClient.get(`/admin/image_list?page=${page}`);
 };
 
 /* GET WASABI SIGNED URL */
@@ -36,8 +36,8 @@ export const updateImageStatus = (id, status) => {
 ───────────────────────────────────────── */
 
 /* GET VIDEOS LIST */
-export const getVideos = () => {
-  return axiosClient.get("/admin/video_list");
+export const getVideos = (page=1) => {
+  return axiosClient.get(`/admin/video_list?page=${page}`);
 };
 
 /* TOGGLE VIDEO STATUS */
@@ -45,13 +45,7 @@ export const updateVideoStatus = (id, status) => {
   return axiosClient.post(`/admin/video_status/${id}`, { status: Boolean(status) });
 };
 
-/* UPLOAD VIDEO — chunked
-   upload_id     = cleaned video title from user (lowercase, alphanumeric only)
-   chunk_index   = 1-based
-   total_chunks  = total number of chunks
-   file          = chunk blob named chunk_N.part
-   thumbnail_id  = selected thumbnail id
-*/
+
 const CHUNK_SIZE = 2 * 1024 * 1024; // 2 MB
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));

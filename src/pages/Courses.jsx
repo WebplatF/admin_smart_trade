@@ -38,7 +38,7 @@ const Courses = () => {
 
     try {
       const res = await getCourses();
-
+console.log("course sample:", res.data.data[0]);
       if (res.data.status) {
         const data = res.data.data;
         setCourses(data);
@@ -69,7 +69,12 @@ const Courses = () => {
       const res = await getImages();
 
       if (res.data.status) {
-        const data = res.data.data;
+        console.log("images response:", res.data);
+const data = Array.isArray(res.data.data?.dataList)
+  ? res.data.data.dataList
+  : Array.isArray(res.data.data)
+  ? res.data.data
+  : [];
         setImages(data);
 
         const map = {};
@@ -107,7 +112,7 @@ const Courses = () => {
       id: course.id,
       title: course.title,
       expert: course.expert,
-      image_id: ""
+      image_id: course.thumbnail_id ||"", 
     });
 
     setSelectedImg(course.thumbnail_id
@@ -138,13 +143,13 @@ const Courses = () => {
       const payload = {
         title: formData.title,
         expert: formData.expert,
-        image_id: selectedImg?.id || formData.image_id || undefined,
+        image_id: selectedImg?.id || formData.image_id || "",
       };
 
       if (formMode === "edit") {
         payload.course_id = formData.id;
       }
-
+console.log("payload being sent:", payload);
       const res = formMode === "create"
         ? await createCourse(payload)
         : await editCourse(payload);

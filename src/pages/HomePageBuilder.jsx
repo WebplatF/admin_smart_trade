@@ -4,6 +4,7 @@ import { Image as ImageIcon, X, Plus, Film, Layout, Monitor, Smartphone, Play } 
 import axiosClient from "../api/axiosClient";
 import { getImages, getVideos, getWasabiFile } from "../api/mediaService";
 import toast from "react-hot-toast";
+import Pagination from "../components/Pagination";
 
 /* ── API ── */
 const getHomeBuilder = () => axiosClient.get("/admin/home_builder");
@@ -26,7 +27,7 @@ const HomePageBuilder = () => {
   const [bannerModal, setBannerModal] = useState(null);     // null | "web" | "mobile"
   const [bannerTitle, setBannerTitle] = useState("");
   const [savingBanner, setSavingBanner] = useState(false);
-  const [bannerErr, setBannerErr] = useState("");
+  const [bannerErr, setBannerErr]       = useState("");
 
   /* ── DEMO VIDEO MULTI-SELECT ── */
   const [demoModal, setDemoModal] = useState(false);
@@ -50,7 +51,7 @@ const HomePageBuilder = () => {
   /* ── VIDEO PICKER (multi-select inside modal) ── */
   const [videos, setVideos] = useState([]);
   const [videoThumbUrls, setVideoThumbUrls] = useState({});
-  const [loadingVids, setLoadingVids] = useState(false);
+  const [loadingVids, setLoadingVids]       = useState(false);
 
   /* ── HLS PLAYER ── */
   const [activeDemo, setActiveDemo] = useState(null); // demo video to preview
@@ -127,10 +128,10 @@ const HomePageBuilder = () => {
     try {
       const res = await getHomeBuilder();
       if (res.data.status) {
-        const raw = res.data.data;
-        const bannerList = raw?.banner || [];
-        const demoList = raw?.demo_videos || [];
-        const weeklyList = raw?.weekly_meeting || [];
+        const raw        = res.data.data;
+        const bannerList = raw?.banner       || [];
+        const demoList    = raw?.demo_videos    || [];
+        const weeklyList  = raw?.weekly_meeting || [];
 
         // Latest 4 of each
         const latestDemos = demoList.slice(-4);
@@ -193,45 +194,56 @@ setItemUrls(map);
 
 useEffect(() => { loadData(); }, []); // eslint-disable-line
 
-/* ── LOAD IMAGES ── */
-const loadImages = async () => {
-  if (images.length > 0) return;
-  setLoadingImgs(true);
-  try {
-    const res = await getImages();
-    if (res.data.status) {
-      const data = res.data.data;
-      setImages(data);
-      const map = {};
-      await Promise.all(data.map(async (img) => {
-        try { const r = await getWasabiFile(img.media_url); map[img.id] = r?.data?.data?.wasabi_url ?? null; }
-        catch { map[img.id] = null; }
-      }));
-      setImageUrls(map);
-    }
-  } catch (e) { console.error(e); }
-  finally { setLoadingImgs(false); }
-};
+  /* ── LOAD IMAGES ── */
+  const loadImages = async (page=1) => {
+   
+    setLoadingImgs(true);
+    try {
+      const res = await getImages(page);
+      if (res.data.status) {
+        const data = Array.isArray(res.data.data?.dataList) ? res.data.data.dataList : [];
+        setImages(data);
+        setCurrentPage(page);                                      // ← track current page
+      setTotalRecords(res.data.data?.totalRecords ?? 0); 
+        const map = {};
+        await Promise.all(data.map(async (img) => {
+          try { const r = await getWasabiFile(img.media_url); map[img.id] = r?.data?.data?.wasabi_url ?? null; }
+          catch { map[img.id] = null; }
+        }));
+        setImageUrls(map);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoadingImgs(false); }
+  };
 
-/* ── LOAD VIDEOS FOR PICKER ── */
-const loadVideosForPicker = async () => {
-  setLoadingVids(true);
-  try {
-    const res = await getVideos();
-    if (res.data.status) {
-      const data = res.data.data;
-      setVideos(data);
-      const map = {};
-      await Promise.all(data.map(async (v) => {
-        if (!v.thumbnail) { map[v.id] = null; return; }
-        try { const r = await getWasabiFile(v.thumbnail); map[v.id] = r?.data?.data?.wasabi_url ?? null; }
-        catch { map[v.id] = null; }
-      }));
-      setVideoThumbUrls(map);
-    }
-  } catch (e) { console.error(e); }
-  finally { setLoadingVids(false); }
-};
+  /* ── LOAD VIDEOS FOR PICKER ── */
+  const loadVideosForPicker = async (page=1) => {
+    setLoadingVids(true);
+    try {
+      const res = await getVideos(page);
+      if (res.data.status) {
+        const data = Array.isArray(res.data.data?.dataList) ? res.data.data.dataList : [];
+        setVideos(data);
+         setVideoPage(page);                                  
+      setVideoTotalRecords(res.data.data?.totalRecords ?? 0);
+        const map = {};
+        await Promise.all(data.map(async (v) => {
+          if (!v.thumbnail) { map[v.id] = null; return; }
+          try { const r = await getWasabiFile(v.thumbnail); map[v.id] = r?.data?.data?.wasabi_url ?? null; }
+          catch { map[v.id] = null; }
+        }));
+        setVideoThumbUrls(map);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoadingVids(false); }
+  };
+  const ITEMS_PER_PAGE =10;
+  const VIDEO_ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
+const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
+
+
+
 
 /* ── SAVE BANNER ── */
 const saveBanner = async () => {
@@ -596,7 +608,16 @@ return (
               {videos.length === 0 && <p className="hb-picker-empty" style={{ gridColumn: "span 4" }}>No videos in Media Library.</p>}
             </div>
           )}
-
+ {videoTotalPages > 1 && (
+      <Pagination
+        currentPage={videoPage}
+        totalPages={videoTotalPages}
+        onPageChange={(newPage) => {
+          setVideoThumbUrls({});       // ← clear stale thumbnails
+          loadVideosForPicker(newPage);
+        }}
+      />
+    )}
           <div className="hb-demo-modal-footer">
             <span className="hb-demo-footer-hint">Click videos to select · Click again to deselect</span>
             <div style={{ display: "flex", gap: 10 }}>
@@ -751,32 +772,42 @@ return (
 
 
 
-    {/* ══ IMAGE PICKER ══ */}
-    {imgPickerOpen && (
-      <div className="modal-overlay" onClick={() => setImgPickerOpen(false)}>
-        <div className="hb-picker-modal" onClick={(e) => e.stopPropagation()}>
-          <div className="hb-modal-header">
-            <div className="hb-modal-title-wrap">
-              <div className="hb-modal-icon"><ImageIcon size={15} color="#2f4fd5" /></div>
-              <h3>Select Image</h3>
+      {/* ══ IMAGE PICKER ══ */}
+      {imgPickerOpen && (
+        <div className="modal-overlay" onClick={() => setImgPickerOpen(false)}>
+          <div className="hb-picker-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="hb-modal-header">
+              <div className="hb-modal-title-wrap">
+                <div className="hb-modal-icon"><ImageIcon size={15} color="#2f4fd5" /></div>
+                <h3>Select Image</h3>
+              </div>
+              <button className="hb-modal-close" onClick={() => setImgPickerOpen(false)}><X size={15} /></button>
             </div>
-            <button className="hb-modal-close" onClick={() => setImgPickerOpen(false)}><X size={15} /></button>
+            {loadingImgs ? <p className="hb-loading">Loading images...</p> : (
+              <div className="hb-picker-grid">
+                {images.map(img => (
+                  <div key={img.id} className={`hb-picker-item${selectedImg?.id === img.id ? " hb-picker-item--sel" : ""}`}
+                    onClick={() => { setSelectedImg({ id: img.id, url: imageUrls[img.id] }); setImgPickerOpen(false); }}>
+                    {imageUrls[img.id] ? <img src={imageUrls[img.id]} alt={img.title} /> : <div className="hb-picker-ph"><ImageIcon size={18} color="#c5d0f5" /></div>}
+                    <p>{img.title}</p>
+                  </div>
+                ))}
+                {images.length === 0 && <p className="hb-picker-empty">No images in Media Library.</p>}
+              </div>
+            )}
+{totalPages > 1 && (
+  <Pagination
+    currentPage={currentPage}
+    totalPages={totalPages}
+    onPageChange={(newPage) => {
+      setImageUrls({});        // ← clear stale thumbnails
+      loadImages(newPage);
+    }}
+  />
+)}
           </div>
-          {loadingImgs ? <p className="hb-loading">Loading images...</p> : (
-            <div className="hb-picker-grid">
-              {images.map(img => (
-                <div key={img.id} className={`hb-picker-item${selectedImg?.id === img.id ? " hb-picker-item--sel" : ""}`}
-                  onClick={() => { setSelectedImg({ id: img.id, url: imageUrls[img.id] }); setImgPickerOpen(false); }}>
-                  {imageUrls[img.id] ? <img src={imageUrls[img.id]} alt={img.title} /> : <div className="hb-picker-ph"><ImageIcon size={18} color="#c5d0f5" /></div>}
-                  <p>{img.title}</p>
-                </div>
-              ))}
-              {images.length === 0 && <p className="hb-picker-empty">No images in Media Library.</p>}
-            </div>
-          )}
         </div>
-      </div>
-    )}
+      )}
 
 
 
