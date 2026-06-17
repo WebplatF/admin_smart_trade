@@ -52,7 +52,10 @@ const HomePageBuilder = () => {
   const [videos, setVideos] = useState([]);
   const [videoThumbUrls, setVideoThumbUrls] = useState({});
   const [loadingVids, setLoadingVids]       = useState(false);
-
+   const [currentPage, setCurrentPage]   = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [videoPage, setVideoPage]               = useState(1);
+  const [videoTotalRecords, setVideoTotalRecords] = useState(0);
   /* ── HLS PLAYER ── */
   const [activeDemo, setActiveDemo] = useState(null); // demo video to preview
 
@@ -128,10 +131,10 @@ const HomePageBuilder = () => {
     try {
       const res = await getHomeBuilder();
       if (res.data.status) {
-        const raw        = res.data.data;
-        const bannerList = raw?.banner       || [];
-        const demoList    = raw?.demo_videos    || [];
-        const weeklyList  = raw?.weekly_meeting || [];
+        const raw        = res.data.data || {};
+        const bannerList = Array.isArray(raw?.banner) ? raw.banner : [];
+        const demoList    = Array.isArray(raw?.demo_videos) ? raw.demo_videos : [];
+        const weeklyList  = Array.isArray(raw?.weekly_meeting) ? raw.weekly_meeting : [];
 
         // Latest 4 of each
         const latestDemos = demoList.slice(-4);
