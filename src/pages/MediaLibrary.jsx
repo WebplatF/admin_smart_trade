@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import {
   Image, X, Eye, Search,
   CloudUpload, Film, Play, ExternalLink, Clock,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight,Pencil
 } from "lucide-react";
 import {
   getImages, getWasabiFile, uploadImage, updateImageStatus,
@@ -15,26 +15,27 @@ import Pagination from "../components/Pagination";
 const MediaLibrary = () => {
 
   /* ── IMAGE STATE ── */
-  const [images, setImages]             = useState([]);
-  const [currentPage, setCurrentPage]   = useState(1);
+  const [images, setImages] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
-  const [videoPage, setVideoPage]               = useState(1);
-const [videoTotalRecords, setVideoTotalRecords] = useState(0);
-  const [imageUrls, setImageUrls]       = useState({});
-  const [title, setTitle]               = useState("");
-  const [file, setFile]                 = useState(null);
-  const [imgProgress, setImgProgress]   = useState(0);
+  const [videoPage, setVideoPage] = useState(1);
+  const [videoTotalRecords, setVideoTotalRecords] = useState(0);
+  const [imageUrls, setImageUrls] = useState({});
+  const [title, setTitle] = useState("");
+  const [file, setFile] = useState(null);
+  const [imgProgress, setImgProgress] = useState(0);
   const [imgUploading, setImgUploading] = useState(false);
-  const [imgDone, setImgDone]           = useState(false);
-
+  const [imgDone, setImgDone] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+const [selectedImage, setSelectedImage] = useState(null);
   /* ── VIDEO STATE ── */
-  const [videos, setVideos]               = useState([]);
-  const [videoUrls, setVideoUrls]         = useState({});
-  const [videoTitle, setVideoTitle]       = useState("");
-  const [videoFile, setVideoFile]         = useState(null);
-  const [vidProgress, setVidProgress]     = useState(0);
-  const [vidUploading, setVidUploading]   = useState(false);
-  const [vidDone, setVidDone]             = useState(false);
+  const [videos, setVideos] = useState([]);
+  const [videoUrls, setVideoUrls] = useState({});
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoFile, setVideoFile] = useState(null);
+  const [vidProgress, setVidProgress] = useState(0);
+  const [vidUploading, setVidUploading] = useState(false);
+  const [vidDone, setVidDone] = useState(false);
   const [vidStatusText, setVidStatusText] = useState("");
 
   /* ── PENDING VIDEOS (optimistic list before server processes) ── */
@@ -43,10 +44,10 @@ const [videoTotalRecords, setVideoTotalRecords] = useState(0);
   const [loadingMedia, setLoadingMedia] = useState(false);
 
   /* ── MODALS ── */
-  const [thumbOpen, setThumbOpen]           = useState(false);
-  const [selectedThumb, setSelectedThumb]   = useState(null);
-  const [previewOpen, setPreviewOpen]       = useState(false);
-  const [previewData, setPreviewData]       = useState(null);
+  const [thumbOpen, setThumbOpen] = useState(false);
+  const [selectedThumb, setSelectedThumb] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
   const [vidPreviewOpen, setVidPreviewOpen] = useState(false);
   const [vidPreviewData, setVidPreviewData] = useState(null);
   const videoRef = useRef(null);
@@ -55,6 +56,10 @@ const [videoTotalRecords, setVideoTotalRecords] = useState(0);
   const ITEMS_PER_PAGE = 10; // Adjust based on your backend
 
   /* ── LOAD IMAGES WITH PAGINATION ── */
+  const handleDeleteImage = (img) => {
+  setSelectedImage(img);
+  setDeleteModalOpen(true);
+};
   const loadImages = async (page = 1) => {
     try {
       setLoadingMedia(true);
@@ -90,7 +95,7 @@ const [videoTotalRecords, setVideoTotalRecords] = useState(0);
     }
   };
 
-  const loadVideos = async (page=1) => {
+  const loadVideos = async (page = 1) => {
     try {
       const res = await getVideos(page);
       if (!res.data.status) return;
@@ -104,8 +109,8 @@ const [videoTotalRecords, setVideoTotalRecords] = useState(0);
       setVideos([...data]);
       setVideoUrls({ ...map });
       setVideoPage(res.data.data.currentPage);
-    setTotalRecords(res.data.data.totalRecords); 
-      
+      setTotalRecords(res.data.data.totalRecords);
+
       // Remove from pending if now completed
       setPendingVids(prev => prev.filter(p => {
         const found = data.find(v => v.video_id === p.uploadId);
@@ -126,10 +131,10 @@ const [videoTotalRecords, setVideoTotalRecords] = useState(0);
   /* ── PAGINATION HELPERS ── */
 
 
-  
+
   const VIDEO_ITEMS_PER_PAGE = 10;
   const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
-const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
+  const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
   /* ── HLS VIDEO PREVIEW ── */
   useEffect(() => {
     if (!vidPreviewOpen || !vidPreviewData?.wasabiUrl || !vidPreviewData?.mediaUrl) return;
@@ -166,11 +171,11 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
         }
         const hls = new Hls({ enableWorker: false, loader: WasabiLoader, fLoader: WasabiLoader });
         hls.loadSource(blobUrl); hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => { }));
         hls.on(Hls.Events.ERROR, (_, data) => { if (data.fatal) console.error("HLS fatal:", data.type, data.details); });
         video._hls = hls;
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = blobUrl; video.play().catch(() => {});
+        video.src = blobUrl; video.play().catch(() => { });
       }
     };
     const loadHlsAndStart = () => {
@@ -223,8 +228,8 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
 
     // 2. Reset form fields
     const titleToUpload = videoTitle.trim();
-    const fileToUpload  = videoFile;
-    const thumbId       = selectedThumb.id;
+    const fileToUpload = videoFile;
+    const thumbId = selectedThumb.id;
     setVideoTitle(""); setVideoFile(null); setSelectedThumb(null);
 
     setVidUploading(true); setVidDone(false); setVidProgress(0); setVidStatusText("");
@@ -258,7 +263,7 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
               return;
             }
           }
-        } catch {}
+        } catch { }
         if (tries < 30) setTimeout(poll, 10000);
         else { setVidStatusText(""); setPendingVids(prev => prev.filter(p => p.uploadId !== uploadId)); }
       };
@@ -311,12 +316,12 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
 
   // Merge pending + real videos
   const realVideoIds = new Set(videos.map(v => v.video_id));
-  const pendingRows  = pendingVids
+  const pendingRows = pendingVids
     .filter(p => !realVideoIds.has(p.uploadId))
     .map(p => ({ _pending: true, video_id: p.uploadId, title: p.title, id: p.uploadId }));
   const finalVidRows = [...pendingRows, ...videos];
 
- 
+
 
   return (
     <div className="media-page">
@@ -354,7 +359,7 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
                   <th className="col-prev">Preview</th>
                   <th>Title</th>
                   <th className="col-date">Updated</th>
-                  <th className="col-status">Status</th>
+                  <th className="col-status">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -376,7 +381,7 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
                           onClick={() =>
                             imageUrls[img.id] &&
                             (setPreviewData({ src: imageUrls[img.id], title: img.title }),
-                            setPreviewOpen(true))
+                              setPreviewOpen(true))
                           }
                         >
                           <img className="row-thumb" src={imageUrls[img.id] || "/no-image.png"} alt={img.title} />
@@ -390,14 +395,19 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
                       <td className="td-title">{img.title}</td>
                       <td className="td-sm">{fmtDate(img.updated_at)}</td>
                       <td>
-                        <label className="toggle">
+                        <div  className="status-td">
+{/* <label className="toggle">
                           <input
                             type="checkbox"
                             checked={!img.status}
                             onChange={() => toggleImgStatus(img)}
                           />
                           <span className="tog-track" />
-                        </label>
+                        </label> */}
+                        <span class="icon" onClick={() => handleDeleteImage(img)}><i class="bi bi-trash"></i></span>
+                        </div>
+                        
+
                       </td>
                     </tr>
                   ))
@@ -407,18 +417,18 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
           </div>
 
           {/* PAGINATION — IMAGES */}
-         {/* PAGINATION — IMAGES */}
-{totalPages > 1 && (
-  <Pagination
-    currentPage={currentPage}
-    totalPages={totalPages}
-    onPageChange={(newPage) => {
-      loadImages(newPage);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }}
-  />
-)}
-        </div> 
+          {/* PAGINATION — IMAGES */}
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(newPage) => {
+                loadImages(newPage);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
+          )}
+        </div>
 
         {/* CARD 2 — Image Upload */}
         <div className="ml-card">
@@ -499,7 +509,7 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
                   <th className="col-prev">Preview</th>
                   <th>Title</th>
                   <th className="col-dur">Duration</th>
-                  <th className="col-status">Status</th>
+                  <th className="col-status">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -574,7 +584,7 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
                             </>
                           )}
                         </td>
-                        <td>
+                        {/* <td>
                           {isPending ? (
                             <span className="status-pill pill--pending">Pending</span>
                           ) : (
@@ -582,7 +592,16 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
                               {isCompleted ? "Completed" : "Pending"}
                             </span>
                           )}
-                        </td>
+                        </td> */}
+                        <td>
+  {!isPending && (
+    <button
+      className="action-btn edit-btn"
+    >
+      <Pencil size={16} />
+    </button>
+  )}
+</td>
                       </tr>
                     );
                   })
@@ -591,17 +610,17 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
             </table>
           </div>
 
-{/* PAGINATION — VIDEOS */}
-{videoTotalPages > 1 && (
-  <Pagination
-    currentPage={videoPage}
-    totalPages={videoTotalPages}
-    onPageChange={(newPage) => {
-      loadVideos(newPage);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }}
-  />
-)}
+          {/* PAGINATION — VIDEOS */}
+          {videoTotalPages > 1 && (
+            <Pagination
+              currentPage={videoPage}
+              totalPages={videoTotalPages}
+              onPageChange={(newPage) => {
+                loadVideos(newPage);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
+          )}
         </div>
 
         {/* CARD 4 — Video Upload */}
@@ -697,8 +716,8 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
               {(images.length > 0
                 ? images
                 : Array(6)
-                    .fill(null)
-                    .map((_, i) => ({ id: i, title: "Sample Image", _mock: true }))
+                  .fill(null)
+                  .map((_, i) => ({ id: i, title: "Sample Image", _mock: true }))
               ).map((img, i) => (
                 <div
                   key={img._mock ? i : img.id}
@@ -781,6 +800,52 @@ const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
           </div>
         </div>
       )}
+      {deleteModalOpen && (
+  <div
+    className="overlay"
+    onClick={() => setDeleteModalOpen(false)}
+  >
+    <div
+      className="confirm-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3>Delete Image</h3>
+
+      <p>
+        Are you sure you want to delete
+        <strong> "{selectedImage?.title}"</strong>?
+      </p>
+
+      <div className="confirm-actions">
+        <button
+          className="cancel-btn"
+          onClick={() => setDeleteModalOpen(false)}
+        >
+          Cancel
+        </button>
+
+        <button
+          className="delete-btn"
+          onClick={async () => {
+            try {
+              // await deleteImage(selectedImage.id);
+
+              setDeleteModalOpen(false);
+              setSelectedImage(null);
+
+              // reload images
+              await loadImages(currentPage);
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)} 
     </div>
   );
 };
