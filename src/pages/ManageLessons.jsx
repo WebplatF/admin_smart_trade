@@ -231,7 +231,7 @@ const VIDEO_ITEMS_PER_PAGE = 10;
     try {
       const res = await getLessonVideos(lesson.id);
       if (res.data.status) {
-        const data = res.data.data.dataList || [];
+        const data = res.data.data || [];
         setLessonVideos(data);
       }
     } catch (e) {
@@ -399,11 +399,11 @@ const VIDEO_ITEMS_PER_PAGE = 10;
                     <button className="act-btn act-view" onClick={() => loadLessonVideos(lesson)}>
                       <Eye size={14} />
                     </button>
-                    <label className="switch">
+                    {/* <label className="switch">
                       <input type="checkbox" checked={!lesson.is_delete}
                         onChange={() => toggleStatus(lesson)} />
                       <span className="slider" />
-                    </label>
+                    </label> */}
                     <button className="act-btn act-delete" onClick={() => deleteLesson(lesson)}>
                       <Trash2 size={14} />
                     </button>
