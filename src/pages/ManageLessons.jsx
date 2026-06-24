@@ -9,6 +9,7 @@ import {
   ArrowLeft, Plus, Pencil, Eye, Trash2, X, Save, Play, Film,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import Pagination from "../components/Pagination";
 
 const ManageLessons = ({ course, back }) => {
 
@@ -30,7 +31,8 @@ const ManageLessons = ({ course, back }) => {
   const [lessonVideos, setLessonVideos]   = useState([]);
 
   const [loadingVideos, setLoadingVideos] = useState(false);
-
+  const [videoPage, setVideoPage] = useState(1);
+   const [videoTotalRecords, setVideoTotalRecords] = useState(0);
   /* ── VIDEO PICKER ── */
   const [pickerOpen, setPickerOpen]       = useState(false);
   const [allVideos, setAllVideos]         = useState([]);
@@ -134,6 +136,11 @@ const ManageLessons = ({ course, back }) => {
     };
   }, [previewVideo]); // eslint-disable-line react-hooks/exhaustive-deps
 
+
+const VIDEO_ITEMS_PER_PAGE = 10;
+  // const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
+  const videoTotalPages = Math.ceil(videoTotalRecords / VIDEO_ITEMS_PER_PAGE);
+
   /* ── LOAD LESSONS ── */
   const loadLessons = async () => {
     setLoadingLessons(true);
@@ -224,7 +231,7 @@ const ManageLessons = ({ course, back }) => {
     try {
       const res = await getLessonVideos(lesson.id);
       if (res.data.status) {
-        const data = res.data.data;
+        const data = res.data.data.dataList || [];
         setLessonVideos(data);
       }
     } catch (e) {
@@ -234,13 +241,13 @@ const ManageLessons = ({ course, back }) => {
   };
 
   /* ── OPEN VIDEO PICKER ── */
-  const openVideoPicker = async () => {
+  const openVideoPicker = async (page=1) => {
     setPickerOpen(true);
     setLoadingPicker(true);
     try {
-      const res = await getVideos();
+      const res = await getVideos(page);
       if (res.data.status) {
-        const data = res.data.data;
+        const data = res.data.data.dataList || [];;
         const map = {};
         await Promise.all(data.map(async (v) => {
           if (!v.thumbnail) { map[v.id] = null; return; }
@@ -509,6 +516,18 @@ const ManageLessons = ({ course, back }) => {
                   No videos available in Media Library.
                 </p>
               )}
+
+              {/* PAGINATION — VIDEOS */}
+          {videoTotalPages > 1 && (
+            <Pagination
+              currentPage={videoPage}
+              totalPages={videoTotalPages}
+              onPageChange={(newPage) => {
+                openVideoPicker(newPage);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
+          )}
             </div>
           </div>
         </div>

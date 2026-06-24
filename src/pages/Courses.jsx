@@ -45,9 +45,9 @@ console.log("course sample:", res.data.data[0]);
 
         const map = {};
         await Promise.all(data.map(async (c) => {
-          if (!c.thumbnail_id) { map[c.id] = null; return; }
+          if (!c.thumbnail_url) { map[c.id] = null; return; }
           try {
-            const r = await getWasabiFile(c.thumbnail_id);
+            const r = await getWasabiFile(c.thumbnail_url);
             map[c.id] = r?.data?.data?.wasabi_url ?? null;
           } catch { map[c.id] = null; }
         }));
